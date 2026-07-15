@@ -1,1068 +1,1223 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Volume2, 
-  VolumeX, 
-  Calendar, 
-  Clock, 
-  MapPin, 
-  ChevronRight, 
-  ChevronLeft, 
-  Award, 
-  BookOpen, 
-  Users, 
-  Sparkles, 
-  History, 
-  Compass, 
-  Heart,
-  ChevronDown
-} from 'lucide-react';
-
-export default function App() {
-  // Page States: 'cinematic' (Intro book animation) -> 'main' (Interactive scrollable site)
-  const [appState, setAppState] = useState('intro'); // intro, book1, book2, main
-  const [introStep, setIntroStep] = useState(0); // 0: White/loading, 1: Book Cover, 2: Page 1 (Quote), 3: Page 2 (95 Zhyl)
-  const [audioEnabled, setAudioEnabled] = useState(false);
-  const [activeTimelineYear, setActiveTimelineYear] = useState('1931');
-  const [activeGalleryIndex, setActiveGalleryIndex] = useState(0);
-  const [scrolled, setScrolled] = useState(false);
-  
-  // Custom Audio Synthesizer (to avoid missing assets and comply with iframe limitations)
-  const audioCtxRef = useRef(null);
-  const audioIntervalRef = useRef(null);
-
-  // Live Countdown state
-  const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-
-  // Counters for achievements
-  const [counters, setCounters] = useState({ years: 0, graduates: 0, teachers: 0, medals: 0 });
-
-  // Emblem rotation tracking
-  const [emblemRotation, setEmblemRotation] = useState({ x: 0, y: 0 });
-
-  // Custom Ambient Music Synthesizer (Traditional Silk Road Style Piano & Flute)
-  const initAudio = () => {
-    if (audioCtxRef.current) return;
-    try {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      const ctx = new AudioContext();
-      audioCtxRef.current = ctx;
-      
-      // Play beautiful soft melody loop
-      let noteIndex = 0;
-      // Elegant oriental pentatonic scale (A minor / Sabā-like feel)
-      const melody = [220, 261.63, 293.66, 311.13, 329.63, 392.00, 440, 523.25, 587.33, 659.25];
-      const sequence = [
-        0, 2, 4, 3, 4, 7, 6, 4, 
-        2, 4, 3, 2, 0, 1, 0, -1,
-        4, 6, 7, 9, 7, 6, 4, 3,
-        2, 0, 2, 3, 4, -1, 4, -1
-      ];
-
-      const playPluck = (freq, time, type = 'sine', duration = 1.5, volume = 0.15) => {
-        if (freq <= 0) return;
-        const osc = ctx.createOscillator();
-        const gainNode = ctx.createGain();
-        
-        osc.type = type;
-        osc.frequency.setValueAtTime(freq, time);
-        
-        // Simulating string/dutar resonance
-        gainNode.gain.setValueAtTime(0, time);
-        gainNode.gain.linearRampToValueAtTime(volume, time + 0.05);
-        gainNode.gain.exponentialRampToValueAtTime(0.0001, time + duration);
-        
-        osc.connect(gainNode);
-        gainNode.connect(ctx.destination);
-        osc.start(time);
-        osc.stop(time + duration);
-      };
-
-      const nextNote = () => {
-        const now = ctx.currentTime;
-        const step = sequence[noteIndex % sequence.length];
-        
-        if (step !== -1) {
-          const freq = melody[step];
-          // Main plucked instrument (Dutar-like)
-          playPluck(freq, now, 'triangle', 2.0, 0.12);
-          
-          // Soft high piano chord background
-          if (noteIndex % 4 === 0) {
-            playPluck(freq * 1.5, now, 'sine', 3.5, 0.06);
-            playPluck(freq * 0.5, now, 'sine', 4.0, 0.08); // Deep warm bass
-          }
-        }
-        noteIndex++;
-      };
-
-      nextNote();
-      audioIntervalRef.current = setInterval(nextNote, 1200);
-      setAudioEnabled(true);
-    } catch (e) {
-      console.error("Audio Context Init Failed", e);
-    }
-  };
-
-  const toggleAudio = () => {
-    if (!audioCtxRef.current) {
-      initAudio();
-    } else {
-      if (audioCtxRef.current.state === 'suspended') {
-        audioCtxRef.current.resume();
-        setAudioEnabled(true);
-      } else if (audioCtxRef.current.state === 'running') {
-        audioCtxRef.current.suspend();
-        setAudioEnabled(false);
-      }
-    }
-  };
-
-  // Particle background for the floating golden light effect
-  useEffect(() => {
-    const canvas = document.getElementById('particles-canvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    let animationId;
+<!DOCTYPE html>
+<html lang="kk" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ә. Науаи атындағы №13 мектеп-гимназиясының 95 жылдық мерейтойы</title>
+    <!-- Tailwind CSS жүктеу -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts жүктеу (Қазақ тіліне үйлесімді қаріптер) -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
     
-    const resizeCanvas = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-
-    const particles = Array.from({ length: 80 }, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      radius: Math.random() * 2 + 0.5,
-      speedX: (Math.random() - 0.5) * 0.5,
-      speedY: -Math.random() * 0.8 - 0.2,
-      opacity: Math.random() * 0.6 + 0.2,
-      pulseSpeed: Math.random() * 0.02 + 0.005,
-    }));
-
-    const drawParticles = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      particles.forEach((p) => {
-        p.y += p.speedY;
-        p.x += p.speedX;
-        p.opacity += p.pulseSpeed;
-        if (p.opacity > 0.8 || p.opacity < 0.1) p.pulseSpeed = -p.pulseSpeed;
-
-        if (p.y < -10) {
-          p.y = canvas.height + 10;
-          p.x = Math.random() * canvas.width;
-        }
-        if (p.x < -10 || p.x > canvas.width + 10) {
-          p.speedX = -p.speedX;
-        }
-
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        // Golden particles
-        ctx.fillStyle = `rgba(212, 175, 55, ${Math.max(0, p.opacity)})`;
-        ctx.shadowBlur = p.radius * 3;
-        ctx.shadowColor = '#d4af37';
-        ctx.fill();
-        ctx.shadowBlur = 0; // Reset
-      });
-      animationId = requestAnimationFrame(drawParticles);
-    };
-
-    drawParticles();
-
-    return () => {
-      window.removeEventListener('resize', resizeCanvas);
-      cancelAnimationFrame(animationId);
-    };
-  }, [appState]);
-
-  // Handle Opening Cinematic Page Turns automatically
-  useEffect(() => {
-    if (appState === 'intro') {
-      // Step 0 -> 1: Cover loading
-      const t1 = setTimeout(() => setIntroStep(1), 1000);
-      // Step 1 -> 2: Open to Alisher Navoi Quote
-      const t2 = setTimeout(() => setIntroStep(2), 3500);
-      // Step 2 -> 3: Turn to 95 Years page
-      const t3 = setTimeout(() => setIntroStep(3), 7500);
-      // Step 3 -> Main Site: Transition into school reality
-      const t4 = setTimeout(() => {
-        setAppState('main');
-      }, 11500);
-
-      return () => {
-        clearTimeout(t1);
-        clearTimeout(t2);
-        clearTimeout(t3);
-        clearTimeout(t4);
-      };
-    }
-  }, [appState]);
-
-  // Countdown timer calculation (Target: October 10, 2026)
-  useEffect(() => {
-    const targetDate = new Date('2026-10-10T18:00:00').getTime();
-
-    const interval = setInterval(() => {
-      const now = new Date().getTime();
-      const difference = targetDate - now;
-
-      if (difference <= 0) {
-        clearInterval(interval);
-        setCountdown({ days: 0, hours: 0, minutes: 0, seconds: 0 });
-      } else {
-        const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-        const hours = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-        const minutes = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
-        const seconds = Math.floor((difference % (1000 * 60)) / 1000);
-        setCountdown({ days, hours, minutes, seconds });
-      }
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Achievements counters animation trigger on scroll
-  useEffect(() => {
-    if (appState !== 'main') return;
-
-    const handleScroll = () => {
-      if (window.scrollY > 400) {
-        setScrolled(true);
-      } else {
-        setScrolled(false);
-      }
-
-      // Achievement section trigger
-      const element = document.getElementById('achievements-section');
-      if (element) {
-        const rect = element.getBoundingClientRect();
-        if (rect.top < window.innerHeight && rect.bottom >= 0) {
-          // Animate counters
-          const duration = 2000; // 2 seconds
-          const steps = 50;
-          let currentStep = 0;
-
-          const counterInterval = setInterval(() => {
-            currentStep++;
-            setCounters({
-              years: Math.min(95, Math.round((95 / steps) * currentStep)),
-              graduates: Math.min(10000, Math.round((10000 / steps) * currentStep)),
-              teachers: Math.min(120, Math.round((120 / steps) * currentStep)),
-              medals: Math.min(150, Math.round((150 / steps) * currentStep))
-            });
-
-            if (currentStep >= steps) {
-              clearInterval(counterInterval);
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Montserrat', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif'],
+                    },
+                    colors: {
+                        gold: {
+                            light: '#F9E4B7',
+                            DEFAULT: '#D4AF37',
+                            dark: '#AA820A',
+                        },
+                        orient: {
+                            blue: '#1E3A8A',
+                            sky: '#3B82F6',
+                            emerald: '#059669',
+                            cream: '#FAF6EE',
+                            parchment: '#F5ECD7',
+                        }
+                    }
+                }
             }
-          }, duration / steps);
-
-          // Remove event listener once animated
-          window.removeEventListener('scroll', handleScroll);
-          // Put back simple scroll checker for header
-          window.addEventListener('scroll', () => {
-            setScrolled(window.scrollY > 100);
-          });
         }
-      }
-    };
+    </script>
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [appState]);
+    <style>
+        /* Парақтардың аударылу анимациясы */
+        .page-turn {
+            animation: pageTurnEffect 1.8s cubic-bezier(0.645, 0.045, 0.355, 1) forwards;
+            transform-origin: left center;
+        }
 
-  // Emblem Interactive Mouse Movement Rotation
-  const handleEmblemMouseMove = (e) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left - rect.width / 2;
-    const y = e.clientY - rect.top - rect.height / 2;
-    setEmblemRotation({
-      x: -(y / rect.height) * 30, // tilt degree
-      y: (x / rect.width) * 30
-    });
-  };
+        @keyframes pageTurnEffect {
+            0% {
+                transform: rotateY(0deg);
+                filter: brightness(1);
+            }
+            100% {
+                transform: rotateY(-180deg);
+                filter: brightness(0.3);
+                opacity: 0;
+                display: none;
+            }
+        }
 
-  const handleEmblemMouseLeave = () => {
-    setEmblemRotation({ x: 0, y: 0 });
-  };
+        /* Алтын мәтіннің жарқырау анимациясы */
+        @keyframes shimmerEffect {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+        .shimmer-text {
+            background: linear-gradient(90deg, #D4AF37 25%, #FFF 50%, #D4AF37 75%);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmerEffect 4s linear infinite;
+        }
 
-  // Historic Milestones Data
-  const historyData = {
-    '1931': {
-      title: "Алғашқы қадам",
-      desc: "Түркістан өлкесіндегі ең алғашқы білім ошақтарының бірі болып мектеп іргетасы қаланды. Жүздеген бала алғаш рет сауат ашуға мүмкіндік алды.",
-      achievement: "Алғашқы ұстаздар мен сыныптар жинақталды.",
-      image: "https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=800&q=80"
-    },
-    '1950': {
-      title: "Соғыстан кейінгі серпіліс",
-      desc: "Мектеп ғимараты кеңейтіліп, материалдық-техникалық базасы нығайды. Білім сапасы жаңа деңгейге көтеріліп, алғашқы алтын белгі иегерлері шыға бастады.",
-      achievement: "Түлектердің жоғары оқу орындарына түсу көрсеткіші 40%-ға жетті.",
-      image: "https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?auto=format&fit=crop&w=800&q=80"
-    },
-    '1975': {
-      title: "Ұлы ақын есімі",
-      desc: "Мектепке әлемге әйгілі ойшыл, заңғар ақын Әлішер Науаи есімі берілді. Шығыс мәдениеті мен әдебиетін тереңдетіп оқыту басталды.",
-      achievement: "Әлішер Науаи музейі мен арнайы әдебиет үйірмелері ашылды.",
-      image: "https://images.unsplash.com/photo-1546410531-bb4caa6b424d?auto=format&fit=crop&w=800&q=80"
-    },
-    '1991': {
-      title: "Тәуелсіздік жаңа дәуірі",
-      desc: "Қазақстан Тәуелсіздігі жағдайында мектеп ұлттық білім беру стандарттарына көшіп, жаңа бағдарламалар мен тәрбие негіздерін қалыптастырды.",
-      achievement: "Мемлекеттік тілде білім беру және ұлттық бағыттағы реформалар басталды.",
-      image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=800&q=80"
-    },
-    '2000': {
-      title: "Гимназия мәртебесі",
-      desc: "Білім берудегі ерекше жетістіктері үшін мектепке «Гимназия» мәртебесі берілді. Жаратылыстану және гуманитарлық бағыттар тереңдетіп оқытыла бастады.",
-      achievement: "Қалалық және облыстық олимпиадаларда командалық 1-орын иеленді.",
-      image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80"
-    },
-    '2026': {
-      title: "95 жылдық салтанат",
-      desc: "Бүгінде №13 Әлішер Науаи атындағы мектеп-гимназиясы — озық технологиялармен жабдықталған, заманауи білім мен ұлттық тәрбиені ұштастырған алтын ұя.",
-      achievement: "Түркістан облысындағы ТОП-10 инновациялық білім ордасының бірі.",
-      image: "https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=800&q=80"
-    }
-  };
+        /* Жеңіл қалқу (левитация) анимациясы */
+        @keyframes floatEffect {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(1deg); }
+        }
+        .floating-element {
+            animation: floatEffect 6s ease-in-out infinite;
+        }
 
-  // Gallery Photos
-  const galleryPhotos = [
-    {
-      title: "Ардақты ұстаздар ұжымы",
-      desc: "Білім нәрімен сусындатқан, жүрегі жылы ұстаздарымыздың бүгінгі бейнесі.",
-      url: "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=1200&q=80"
-    },
-    {
-      title: "Тарихи сәттер мен жәдігерлер",
-      desc: "Мектеп мұражайында сақталған алғашқы қоңырау, құжаттар мен тарихи суреттер жинағы.",
-      url: "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=1200&q=80"
-    },
-    {
-      title: "Инновациялық сыныптар",
-      desc: "Заманауи IT, STEM зертханалары мен шығармашылық шеберханалар.",
-      url: "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1200&q=80"
-    },
-    {
-      title: "Спорттық және шығармашылық жетістіктер",
-      desc: "Жас спортшылар мен өнерпаздардың Республикалық деңгейдегі жеңістері.",
-      url: "https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=1200&q=80"
-    },
-    {
-      title: "Мектептің алтын түлектері",
-      desc: "Әр жылдары алтын ұядан түлеп ұшып, ел дамуына үлес қосып жүрген түлектер.",
-      url: "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1200&q=80"
-    }
-  ];
+        /* Элементтердің төменнен жоғары қарай баяу шығуы */
+        .fade-in-up {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 1.2s ease-out, transform 1.2s ease-out;
+        }
+        .fade-in-up.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
 
-  const handleNextGallery = () => {
-    setActiveGalleryIndex((prev) => (prev + 1) % galleryPhotos.length);
-  };
+        /* Артқы фонның баяу үлкею анимациясы (Ken Burns) */
+        @keyframes kenBurnsEffect {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.08); }
+            100% { transform: scale(1); }
+        }
+        .ken-burns {
+            animation: kenBurnsEffect 25s ease-in-out infinite;
+        }
 
-  const handlePrevGallery = () => {
-    setActiveGalleryIndex((prev) => (prev - 1 + galleryPhotos.length) % galleryPhotos.length);
-  };
+        /* 3D кеңістік тереңдігі */
+        .perspective-1000 {
+            perspective: 1000px;
+        }
+        .transform-style-3d {
+            transform-style: preserve-3d;
+        }
 
-  return (
-    <div className="min-h-screen bg-[#FAF6EE] text-[#2C2115] font-serif relative overflow-x-hidden selection:bg-[#D4AF37] selection:text-white">
-      {/* Golden Dust Ambient Particles */}
-      <canvas id="particles-canvas" className="fixed inset-0 pointer-events-none z-10" />
+        /* Стильді айналдыру жолағы (Scrollbar) */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #FAF6EE;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #D4AF37;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #AA820A;
+        }
+    </style>
+</head>
+<body class="bg-orient-cream text-[#2C2115] font-serif overflow-x-hidden selection:bg-gold selection:text-white">
 
-      {/* Floating Audio & Quick Actions */}
-      <div className="fixed top-6 right-6 z-50 flex items-center gap-3">
-        <button 
-          onClick={toggleAudio}
-          className="p-3.5 rounded-full bg-white/95 backdrop-blur-md border border-[#D4AF37]/30 text-[#8C6239] shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 flex items-center justify-center"
-          title="Музыканы қосу/өшіру"
-        >
-          {audioEnabled ? <Volume2 className="w-5 h-5 animate-pulse" /> : <VolumeX className="w-5 h-5" />}
+    <!-- Алтын бөлшектер ұшатын кенеп (Canvas) -->
+    <canvas id="particles-canvas" class="fixed inset-0 pointer-events-none z-10"></canvas>
+
+    <!-- Музыка мен заставканы өткізіп жіберу батырмалары -->
+    <div class="fixed top-6 right-6 z-50 flex items-center gap-3">
+        <button id="audio-toggle-btn" class="p-3.5 rounded-full bg-white/95 backdrop-blur-md border border-gold/30 text-[#8C6239] shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 flex items-center justify-center" title="Музыканы қосу/өшіру">
+            <!-- Музыка өшірулі тұрғандағы белгіше -->
+            <svg id="sound-off-icon" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17.25 9.75L19.5 12m0 0l2.25 2.25M19.5 12l2.25-2.25M19.5 12l-2.25 2.25m-10.5-6L4.5 9H1.5v6h3l4.5 3.75V5.25z"></path></svg>
+            <!-- Музыка қосулы тұрғандағы белгіше -->
+            <svg id="sound-on-icon" class="w-5 h-5 hidden animate-pulse" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.114 5.636a9 9 0 010 12.728M16.463 8.288a5.25 5.25 0 010 7.424M6.75 8.25l4.72-4.72a.75.75 0 011.28.53v15.88a.75.75 0 01-1.28.53l-4.72-4.72H4.51c-.88 0-1.704-.507-1.938-1.354A9.01 9.01 0 012.25 12c0-.83.112-1.633.322-2.396C2.806 8.756 3.63 8.25 4.51 8.25H6.75z"></path></svg>
         </button>
-        {appState === 'intro' && (
-          <button 
-            onClick={() => setAppState('main')}
-            className="px-5 py-2.5 rounded-full bg-[#1E3A8A] text-[#FAF6EE] hover:bg-[#D4AF37] text-sm font-sans tracking-wider uppercase transition-all duration-300 shadow-md hover:shadow-[#D4AF37]/20 border border-[#FAF6EE]/20"
-          >
-            Өткізіп жіберу
-          </button>
-        )}
-      </div>
+        <button id="skip-intro-btn" class="px-5 py-2.5 rounded-full bg-orient-blue text-orient-cream hover:bg-gold text-xs font-sans tracking-wider uppercase transition-all duration-300 shadow-md hover:shadow-gold/20 border border-white/20">
+            Заставканы өткізу
+        </button>
+    </div>
 
-      {/* ==================== OPENING CINEMATIC CHAPTERS ==================== */}
-      {appState === 'intro' && (
-        <div className="fixed inset-0 z-40 bg-[#FAF6EE] flex items-center justify-center p-4 overflow-hidden">
-          {/* Subtle Uzbek Geometric Pattern Background overlay */}
-          <div className="absolute inset-0 opacity-5 pointer-events-none bg-[radial-gradient(#8C6239_1px,transparent_1px)] [background-size:24px_24px]"></div>
-          
-          <div className="max-w-4xl w-full flex flex-col items-center justify-center text-center relative z-20">
-            {/* Step 0: White/Loading Transition */}
-            {introStep === 0 && (
-              <div className="animate-fade-in flex flex-col items-center">
-                <div className="w-16 h-16 border-4 border-t-[#D4AF37] border-r-transparent border-b-[#8C6239] border-l-transparent rounded-full animate-spin"></div>
-                <p className="mt-6 text-[#8C6239] font-sans tracking-widest uppercase text-xs">Тарих парақшасы ашылуда...</p>
-              </div>
-            )}
+    <!-- ==================== КИНЕМАТОГРАФИЯЛЫҚ КІРІСПЕ (КІТАП) ==================== -->
+    <div id="intro-overlay" class="fixed inset-0 z-40 bg-orient-cream flex items-center justify-center p-4 overflow-hidden transition-opacity duration-1000">
+        <!-- Жібек жолы мәнеріндегі нәзік артқы фон узоры -->
+        <div class="absolute inset-0 opacity-5 pointer-events-none bg-[radial-gradient(#8C6239_1.5px,transparent_1.5px)] [background-size:32px_32px]"></div>
 
-            {/* Book Simulation (Step 1, 2, 3) */}
-            {introStep >= 1 && (
-              <div className="w-full flex flex-col items-center justify-center animate-fade-in">
+        <div id="intro-content-wrapper" class="max-w-4xl w-full flex flex-col items-center justify-center text-center relative z-20">
+            
+            <!-- Жүктелу индикаторы (Loader) -->
+            <div id="intro-loader" class="flex flex-col items-center transition-all duration-500">
+                <div class="w-16 h-16 border-4 border-t-gold border-r-transparent border-b-[#8C6239] border-l-transparent rounded-full animate-spin"></div>
+                <p class="mt-6 text-[#8C6239] font-sans tracking-widest uppercase text-xs">Тарих кітабы ашылуда...</p>
+            </div>
+
+            <!-- Көне былғары 3D Кітап (Скрипт арқылы іске қосылады) -->
+            <div id="antique-book" class="hidden relative w-[340px] h-[480px] md:w-[620px] md:h-[460px] bg-[#3B2314] rounded-r-2xl shadow-2xl border-l-8 border-[#25150B] flex overflow-hidden transition-transform duration-1000">
                 
-                {/* 3D Realistic Antique Book Container */}
-                <div className="relative w-[340px] h-[460px] md:w-[600px] md:h-[450px] bg-[#3B2314] rounded-r-2xl shadow-2xl border-l-8 border-[#25150B] transition-transform duration-1000 transform hover:scale-[1.02] flex overflow-hidden">
-                  
-                  {/* Left Spine Shadow inside book */}
-                  <div className="absolute left-0 top-0 bottom-0 w-4 bg-gradient-to-r from-black/40 to-transparent z-20"></div>
-                  
-                  {/* Outer Gold Border Framing */}
-                  <div className="absolute inset-3 border-2 border-[#D4AF37]/40 rounded-lg pointer-events-none z-10 flex items-center justify-center">
-                    <div className="absolute inset-1.5 border border-[#D4AF37]/20 rounded"></div>
+                <!-- Кітап түптеуінің ішкі көлеңкесі -->
+                <div class="absolute left-0 top-0 bottom-0 w-5 bg-gradient-to-r from-black/50 to-transparent z-20"></div>
+
+                <!-- Алтын жиектер -->
+                <div class="absolute inset-3 border-2 border-gold/40 rounded-lg pointer-events-none z-10 flex items-center justify-center">
+                    <div class="absolute inset-1.5 border border-gold/20 rounded"></div>
+                </div>
+
+                <!-- Шығыс ою-өрнекті бұрыштары -->
+                <div class="absolute top-4 left-4 text-gold/60 font-serif text-xl z-10">✦</div>
+                <div class="absolute top-4 right-4 text-gold/60 font-serif text-xl z-10">✦</div>
+                <div class="absolute bottom-4 left-4 text-gold/60 font-serif text-xl z-10">✦</div>
+                <div class="absolute bottom-4 right-4 text-gold/60 font-serif text-xl z-10">✦</div>
+
+                <!-- КІТАП ПАРАҒЫ -->
+                <div id="book-page" class="w-full h-full bg-gradient-to-br from-orient-cream to-[#EADEC9] p-8 md:p-12 flex flex-col items-center justify-between text-center relative transition-all duration-1000">
+                    
+                    <!-- Парақ контенті өту әсерімен динамикалық түрде ауысады -->
+                    <div id="page-inner-content" class="w-full h-full flex flex-col justify-between py-4">
+                        <!-- Мұнда беттердің мазмұны көрсетіледі -->
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Төменгі көмекші мәтін -->
+            <p id="intro-hint" class="hidden mt-8 text-[#8C6239] text-xs md:text-sm font-sans tracking-widest uppercase animate-pulse">
+                Мерейтойлық кітап ашылуда...
+            </p>
+
+        </div>
+    </div>
+
+
+    <!-- ==================== НЕГІЗГІ САЙТ (ИНТРОДАН КЕЙІН) ==================== -->
+    <div id="main-site-content" class="opacity-0 transition-opacity duration-1000 pointer-events-none">
+        
+        <!-- НАВИГАЦИЯЛЫҚ ПАНЕЛЬ -->
+        <header id="site-header" class="fixed top-0 left-0 right-0 z-35 transition-all duration-300 bg-transparent py-5">
+            <div class="max-w-7xl mx-auto px-6 flex items-center justify-between">
+                
+                <!-- Мектеп логотипі -->
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 rounded-full border-2 border-gold bg-white flex items-center justify-center shadow-md">
+                        <span class="text-orient-blue font-bold text-lg font-serif">13</span>
+                    </div>
+                    <div>
+                        <h1 class="text-md font-bold tracking-wider text-orient-blue leading-none">№13 МЕКТЕП-ГИМНАЗИЯ</h1>
+                        <span class="text-[10px] uppercase tracking-widest text-[#8C6239] font-sans font-semibold">Әлішер Науаи атындағы</span>
+                    </div>
+                </div>
+
+                <!-- Навигация мәзірі (Десктоп үшін) -->
+                <nav class="hidden md:flex items-center gap-8 text-xs font-sans uppercase tracking-widest font-semibold text-[#2C2115]">
+                    <a href="#hero" class="hover:text-gold transition-colors duration-300">Басты бет</a>
+                    <a href="#invitation" class="hover:text-gold transition-colors duration-300">Шақыру</a>
+                    <a href="#history" class="hover:text-gold transition-colors duration-300">Шежіре</a>
+                    <a href="#gallery" class="hover:text-gold transition-colors duration-300">Галерея</a>
+                    <a href="#achievements" class="hover:text-gold transition-colors duration-300">Жетістіктер</a>
+                </nav>
+
+                <!-- Салтанатты шараға қатысу батырмасы -->
+                <a href="#invitation" class="px-6 py-2.5 rounded-full bg-gradient-to-r from-orient-blue to-[#1E40AF] text-orient-cream text-xs font-sans tracking-wider uppercase shadow-md hover:shadow-lg hover:scale-105 transition-all duration-300 border border-gold/30">
+                    Қатысу
+                </a>
+            </div>
+        </header>
+
+        <!-- 1. ГЕРОЙ-СЕКЦИЯ (БАС ЖАЗБА) -->
+        <section id="hero" class="relative min-h-screen flex flex-col justify-between pt-28 pb-12 overflow-hidden px-4 md:px-8">
+            <!-- Мектеп ғимаратының артқы фоны (Баяу масштабтау әсерімен) -->
+            <div class="absolute inset-0 z-0">
+                <img src="https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1920&q=80" class="w-full h-full object-cover object-center opacity-25 scale-105 ken-burns filter sepia-[15%]" alt="Мектеп кампусы">
+                <!-- Алтын шұғыла мен градиенттер -->
+                <div class="absolute inset-0 bg-gradient-to-t from-orient-cream via-transparent to-orient-cream"></div>
+                <div class="absolute inset-0 bg-gradient-to-r from-orient-cream/90 via-transparent to-orient-cream/90"></div>
+                <!-- Күн сәулесінің симуляциясы -->
+                <div class="absolute top-10 right-10 w-[500px] h-[500px] rounded-full bg-[#FFE6A5]/25 blur-[120px] pointer-events-none"></div>
+            </div>
+
+            <!-- Жоғарғы сәндік сызықтар -->
+            <div class="w-full max-w-4xl mx-auto text-center mt-4 z-10 relative">
+                <div class="inline-flex items-center gap-4 mb-2">
+                  <span class="h-[1px] w-14 bg-gradient-to-r from-transparent to-gold"></span>
+                  <span class="text-gold font-sans tracking-[0.3em] uppercase text-xs md:text-sm font-semibold">ТҮРКІСТАН ҚАЛАСЫ</span>
+                  <span class="h-[1px] w-14 bg-gradient-to-l from-transparent to-gold"></span>
+                </div>
+            </div>
+
+            <!-- Басты мерейтойлық жазбалар -->
+            <div class="w-full max-w-5xl mx-auto text-center my-auto z-10 relative flex flex-col items-center">
+                
+                <!-- Орасан зор алтын тақырып -->
+                <div class="relative mb-6 floating-element">
+                  <div class="absolute -inset-6 bg-[#FAF6EE]/80 blur-xl rounded-full"></div>
+                  <h1 class="relative text-7xl md:text-9xl font-extrabold tracking-wider leading-none text-transparent bg-clip-text bg-gradient-to-b from-orient-blue via-orient-sky to-orient-blue drop-shadow-lg">
+                    95 ЖЫЛ
+                  </h1>
+                  <!-- Ұшатын алтын ұшқындар -->
+                  <div class="absolute -top-3 left-1/4 text-amber-500 text-xl animate-pulse">✦</div>
+                  <div class="absolute -bottom-3 right-1/4 text-amber-400 text-lg animate-ping">✦</div>
+                </div>
+
+                <!-- Ресми атауы -->
+                <h2 class="text-2xl md:text-5xl font-extrabold text-[#8C6239] tracking-wider uppercase mb-5 max-w-4xl leading-tight font-serif px-2">
+                    Ә. НАУАИ АТЫНДАҒЫ №13 МЕКТЕП-ГИМНАЗИЯ
+                </h2>
+
+                <div class="w-28 h-[1.5px] bg-gold my-3"></div>
+
+                <!-- Мерейтой ұраны -->
+                <p class="text-md md:text-xl text-[#2C2115] italic font-serif max-w-3xl px-6 leading-relaxed mb-10">
+                    «Ұрпақтар сабақтастығы – білім мен тәрбиенің алтын бесігі»
+                </p>
+
+                <!-- Әрекет батырмалары -->
+                <div class="flex flex-col sm:flex-row items-center gap-5">
+                    <a href="#invitation" class="px-8 py-4 rounded-full bg-orient-blue text-orient-cream font-sans text-xs tracking-widest uppercase font-bold hover:bg-gold hover:text-white transition-all duration-300 shadow-xl hover:shadow-gold/30 hover:scale-105 flex items-center gap-2">
+                        <span>Шақыруды ашу</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"></path></svg>
+                    </a>
+                    <a href="#history" class="px-8 py-4 rounded-full bg-white/95 backdrop-blur text-orient-blue border-2 border-gold/50 font-sans text-xs tracking-widest uppercase font-bold hover:bg-gold/10 transition-all duration-300 shadow-md">
+                        <span>Мектеп шежіресі</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- ИНТЕРБЕЛСЕНДІ КЕРІ ЕСЕПТЕУ ТАЙМЕРІ -->
+            <div class="w-full max-w-4xl mx-auto z-10 relative px-2">
+                <div class="bg-white/85 backdrop-blur-md rounded-2xl p-6 border border-gold/35 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6">
+                  <div class="text-center md:text-left">
+                    <p class="text-xs text-[#8C6239] font-sans tracking-widest uppercase font-semibold">Салтанатты кешке дейін:</p>
+                    <h4 class="text-lg font-bold text-orient-blue font-serif">10 қазан 2026 жыл, 18:00</h4>
                   </div>
 
-                  {/* Corner Ornaments */}
-                  <div className="absolute top-4 left-4 text-[#D4AF37]/50 font-serif text-xl z-10">◆</div>
-                  <div className="absolute top-4 right-4 text-[#D4AF37]/50 font-serif text-xl z-10">◆</div>
-                  <div className="absolute bottom-4 left-4 text-[#D4AF37]/50 font-serif text-xl z-10">◆</div>
-                  <div className="absolute bottom-4 right-4 text-[#D4AF37]/50 font-serif text-xl z-10">◆</div>
+                  <!-- Уақыт көрсеткіштерінің кестесі -->
+                  <div class="grid grid-cols-4 gap-4 md:gap-5 w-full md:w-auto">
+                    <div class="text-center bg-white/90 px-3 md:px-5 py-3 rounded-xl border border-gold/20 shadow-sm min-w-[70px]">
+                      <span id="countdown-days" class="block text-xl md:text-2xl font-bold text-orient-blue font-mono">0</span>
+                      <span class="text-[9px] uppercase tracking-wider text-[#8C6239] font-sans font-semibold">күн</span>
+                    </div>
+                    <div class="text-center bg-white/90 px-3 md:px-5 py-3 rounded-xl border border-gold/20 shadow-sm min-w-[70px]">
+                      <span id="countdown-hours" class="block text-xl md:text-2xl font-bold text-orient-blue font-mono">0</span>
+                      <span class="text-[9px] uppercase tracking-wider text-[#8C6239] font-sans font-semibold">сағат</span>
+                    </div>
+                    <div class="text-center bg-white/90 px-3 md:px-5 py-3 rounded-xl border border-gold/20 shadow-sm min-w-[70px]">
+                      <span id="countdown-minutes" class="block text-xl md:text-2xl font-bold text-orient-blue font-mono">0</span>
+                      <span class="text-[9px] uppercase tracking-wider text-[#8C6239] font-sans font-semibold">минут</span>
+                    </div>
+                    <div class="text-center bg-white/90 px-3 md:px-5 py-3 rounded-xl border border-gold/20 shadow-sm min-w-[70px]">
+                      <span id="countdown-seconds" class="block text-xl md:text-2xl font-bold text-orient-blue font-mono">0</span>
+                      <span class="text-[9px] uppercase tracking-wider text-[#8C6239] font-sans font-semibold">секунд</span>
+                    </div>
+                  </div>
+                </div>
 
-                  {/* Page Contents based on steps */}
-                  {introStep === 1 && (
-                    <div className="w-full h-full bg-gradient-to-br from-[#FAF6EE] to-[#EADEC9] p-8 flex flex-col items-center justify-between text-center relative animate-page-turn">
-                      {/* Uzbek patterns at cover */}
-                      <div className="text-center mt-6">
-                        <span className="text-[#D4AF37] text-xs font-sans tracking-widest block mb-1">МЕРЕЙТОЙЛЫҚ КІТАП</span>
-                        <div className="w-12 h-[1px] bg-[#D4AF37] mx-auto"></div>
+                <!-- Төменге нұсқайтын бағытша -->
+                <div class="flex justify-center mt-6">
+                  <a href="#invitation" class="animate-bounce p-2 bg-white/85 rounded-full border border-gold/30 text-orient-blue shadow hover:bg-white transition-colors duration-300">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"></path></svg>
+                  </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. ШАҚЫРУ СЕКЦИЯСЫ (ПЕРГАМЕНТТІ АШЫҚ ХАТ СТИЛІ) -->
+        <section id="invitation" class="py-24 px-4 relative overflow-hidden bg-gradient-to-b from-orient-cream to-orient-parchment">
+            <!-- Артқы фондағы нәзік шығыс жұлдызы геометриясы -->
+            <div class="absolute inset-0 opacity-[0.04] pointer-events-none flex items-center justify-center">
+                <svg class="w-[800px] h-[800px] text-orient-blue" viewBox="0 0 100 100" fill="currentColor">
+                  <polygon points="50,0 60,35 95,35 65,55 80,90 50,70 20,90 35,55 5,35 40,35" />
+                  <polygon points="50,100 40,65 5,65 35,45 20,10 50,30 80,10 65,45 95,65 60,65" transform="rotate(45 50 50)" />
+                </svg>
+            </div>
+
+            <div class="max-w-4xl mx-auto">
+                
+                <!-- Негізгі алтын пергаментті шақыру хаты -->
+                <div class="relative bg-gradient-to-br from-[#FCFBF7] to-[#F1E4C3] rounded-3xl p-8 md:p-16 border-2 border-gold/45 shadow-2xl relative overflow-hidden fade-in-up">
+                  
+                  <!-- Бұрыштардағы дәстүрлі ою-өрнек белгілері -->
+                  <div class="absolute top-6 left-6 text-gold text-2xl">✦</div>
+                  <div class="absolute top-6 right-6 text-gold text-2xl">✦</div>
+                  <div class="absolute bottom-6 left-6 text-gold text-2xl">✦</div>
+                  <div class="absolute bottom-6 right-6 text-gold text-2xl">✦</div>
+
+                  <!-- Алтын жалатылған ішкі жиектер -->
+                  <div class="absolute inset-4 border border-gold/25 rounded-2xl pointer-events-none"></div>
+                  <div class="absolute inset-5 border border-gold/10 rounded-2xl pointer-events-none"></div>
+
+                  <!-- Логотип-белгішесі -->
+                  <div class="text-center mb-8 relative z-10">
+                    <div class="inline-block p-3.5 bg-white rounded-full border border-gold shadow-md mb-4">
+                      <svg class="w-6 h-6 text-gold" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499c-.105-.21-.302-.35-.53-.35a.527.527 0 00-.53.35L8.41 7.424l-4.148.4c-.233.023-.42.18-.485.405a.528.528 0 00.143.54l3.11 2.875-.927 4.14a.528.528 0 00.77.56l3.585-2.16 3.586 2.16a.528.528 0 00.77-.56l-.927-4.14 3.11-2.875a.528.528 0 00.143-.54.527.527 0 00-.485-.405l-4.148-.4-2.03-3.925z"></path></svg>
+                    </div>
+                    <h3 class="text-xs font-sans tracking-[0.25em] uppercase text-[#8C6239] font-bold mb-2">Салтанатты шақыру хаты</h3>
+                    <div class="w-20 h-[1.5px] bg-gold mx-auto"></div>
+                  </div>
+
+                  <!-- Шақыру мәтіні -->
+                  <div class="text-center space-y-6 md:space-y-8 relative z-10 max-w-2xl mx-auto">
+                    <p class="text-xl md:text-3xl text-[#2C2115] font-serif leading-relaxed italic">
+                        Құрметті ұстаздар, ардақты түлектер және қадірлі қонақтар!
+                    </p>
+
+                    <p class="text-md md:text-lg text-[#8C6239]/90 font-sans tracking-wide leading-relaxed">
+                        Сіздерді білім мен тәрбие ордасы — <span class="text-orient-blue font-bold">Әлішер Науаи атындағы №13 мектеп-гимназиясының</span> даңқты тарихына арналған
+                    </p>
+
+                    <!-- Жарқырауық алтын мәтін -->
+                    <div class="py-4">
+                      <h2 class="text-4xl md:text-6xl font-extrabold shimmer-text tracking-wider drop-shadow-sm font-serif">
+                        95 ЖЫЛДЫҚ
+                      </h2>
+                      <p class="text-xs uppercase tracking-[0.3em] text-[#8C6239] mt-3 font-sans font-bold">Алтын ұя мектебіміздің мерейтойы</p>
+                    </div>
+
+                    <p class="text-xl md:text-3xl text-orient-blue font-bold tracking-wide italic font-serif">
+                        салтанатты кешіне
+                    </p>
+
+                    <p class="text-lg md:text-2xl text-[#8C6239] font-serif italic">
+                        Шын жүректен қадірлі қонақ болып қатысуға шақырамыз!
+                    </p>
+
+                    <div class="pt-6">
+                      <p class="text-xs text-[#2C2115]/50 italic font-sans">«Ұстаздық еткен жалықпас, үйретуден балаға»</p>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Мәліметтер карточкалары -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 relative z-10">
+                  
+                  <!-- Күні -->
+                  <div class="bg-white/80 backdrop-blur-sm p-6 rounded-2xl border border-gold/30 shadow-md flex flex-col items-center text-center transition-all duration-300 hover:scale-105 hover:bg-white fade-in-up">
+                    <div class="w-12 h-12 rounded-full bg-blue-50 text-orient-blue flex items-center justify-center mb-4 border border-gold/20 shadow-inner">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5m-9-6h.008v.008H12v-.008zM12 15h.008v.008H12V15zm0 2.25h.008v.008H12v-.008zM9.75 15h.008v.008H9.75V15zm0 2.25h.008v.008H9.75v-.008zM7.5 15h.008v.008H7.5V15zm0 2.25h.008v.008H7.5v-.008zm6.75-4.5h.008v.008h-.008v-.008zm0 2.25h.008v.008h-.008V15zm0 2.25h.008v.008h-.008v-.008zm2.25-4.5h.008v.008H16.5v-.008zm0 2.25h.008v.008H16.5V15z"></path></svg>
+                    </div>
+                    <h4 class="text-xs font-sans tracking-widest uppercase text-[#8C6239] mb-1 font-semibold">Өтетін күні</h4>
+                    <p class="text-lg font-bold text-orient-blue font-serif">10 қазан 2026 жыл</p>
+                    <p class="text-xs text-[#8C6239]/70 mt-1">Сенбілік мерекелік кеш</p>
+                  </div>
+
+                  <!-- Уақыты -->
+                  <div class="bg-white/80 backdrop-blur-sm p-6 rounded-2xl border border-gold/30 shadow-md flex flex-col items-center text-center transition-all duration-300 hover:scale-105 hover:bg-white fade-in-up">
+                    <div class="w-12 h-12 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mb-4 border border-gold/20 shadow-inner">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <h4 class="text-xs font-sans tracking-widest uppercase text-[#8C6239] mb-1 font-semibold">Басталу уақыты</h4>
+                    <p class="text-lg font-bold text-orient-blue font-serif">18:00 — Қонақтарды қарсы алу</p>
+                    <p class="text-xs text-[#8C6239]/70 mt-1">Салтанатты бағдарлама</p>
+                  </div>
+
+                  <!-- Мекенжайы -->
+                  <div class="bg-white/80 backdrop-blur-sm p-6 rounded-2xl border border-gold/30 shadow-md flex flex-col items-center text-center transition-all duration-300 hover:scale-105 hover:bg-white fade-in-up">
+                    <div class="w-12 h-12 rounded-full bg-emerald-50 text-orient-emerald flex items-center justify-center mb-4 border border-gold/20 shadow-inner">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"></path></svg><svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"></path></svg>
+                    </div>
+                    <h4 class="text-xs font-sans tracking-widest uppercase text-[#8C6239] mb-1 font-semibold">Өтетін орны</h4>
+                    <p class="text-lg font-bold text-orient-blue font-serif">Түркістан қаласы</p>
+                    <p class="text-xs text-[#8C6239]/70 mt-1">Төле би көшесі, 46 ғимарат</p>
+                  </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. МЕКТЕП ШЕЖІРЕСІ (ИНТЕРБЕЛСЕНДІ ТАЙМЛАЙН) -->
+        <section id="history" class="py-24 px-4 bg-gradient-to-b from-orient-parchment to-orient-cream">
+            <div class="max-w-6xl mx-auto">
+                
+                <!-- Тақырып -->
+                <div class="text-center mb-16 fade-in-up">
+                  <div class="inline-flex items-center gap-3 mb-2">
+                    <svg class="w-5 h-5 text-gold" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"></path></svg>
+                    <span class="text-xs font-sans tracking-[0.2em] uppercase text-[#8C6239] font-bold">Даңқты жол шежіресі</span>
+                  </div>
+                  <h2 class="text-3xl md:text-5xl font-extrabold text-orient-blue tracking-wider uppercase font-serif">
+                    Тарихи белестер
+                  </h2>
+                  <div class="w-20 h-[2px] bg-gold mx-auto mt-4"></div>
+                </div>
+
+                <!-- Жылдарды таңдау жолағы -->
+                <div class="flex justify-between items-center gap-2 overflow-x-auto pb-4 mb-12 border-b border-gold/30 scrollbar-thin fade-in-up">
+                  <button onclick="switchTimeline('1931')" id="tab-1931" class="timeline-tab px-6 py-3 rounded-full text-sm font-sans font-bold tracking-wider transition-all duration-300 min-w-[90px] bg-orient-blue text-white shadow-md scale-110">1931</button>
+                  <button onclick="switchTimeline('1950')" id="tab-1950" class="timeline-tab px-6 py-3 rounded-full text-sm font-sans font-bold tracking-wider transition-all duration-300 min-w-[90px] bg-white/60 text-[#8C6239] hover:bg-gold/20 border border-gold/20">1950</button>
+                  <button onclick="switchTimeline('1975')" id="tab-1975" class="timeline-tab px-6 py-3 rounded-full text-sm font-sans font-bold tracking-wider transition-all duration-300 min-w-[90px] bg-white/60 text-[#8C6239] hover:bg-gold/20 border border-gold/20">1975</button>
+                  <button onclick="switchTimeline('1991')" id="tab-1991" class="timeline-tab px-6 py-3 rounded-full text-sm font-sans font-bold tracking-wider transition-all duration-300 min-w-[90px] bg-white/60 text-[#8C6239] hover:bg-gold/20 border border-gold/20">1991</button>
+                  <button onclick="switchTimeline('2000')" id="tab-2000" class="timeline-tab px-6 py-3 rounded-full text-sm font-sans font-bold tracking-wider transition-all duration-300 min-w-[90px] bg-white/60 text-[#8C6239] hover:bg-gold/20 border border-gold/20">2000</button>
+                  <button onclick="switchTimeline('2026')" id="tab-2026" class="timeline-tab px-6 py-3 rounded-full text-sm font-sans font-bold tracking-wider transition-all duration-300 min-w-[90px] bg-white/60 text-[#8C6239] hover:bg-gold/20 border border-gold/20">2026</button>
+                </div>
+
+                <!-- Таңдалған дәуірдің мазмұны -->
+                <div class="bg-white/95 backdrop-blur-sm rounded-3xl p-6 md:p-12 border border-gold/30 shadow-2xl grid grid-cols-1 md:grid-cols-12 gap-8 items-center fade-in-up">
+                  
+                  <div class="md:col-span-7 space-y-6">
+                    <div id="timeline-badge" class="inline-block px-4 py-1.5 rounded-full bg-amber-100 border border-gold/30 text-[#8C6239] text-xs font-sans font-bold tracking-widest uppercase">
+                      ТАРИХИ КЕЗЕҢ • 1931
+                    </div>
+                    
+                    <h3 id="timeline-title" class="text-2xl md:text-4xl font-extrabold text-orient-blue font-serif leading-tight">
+                        Алғашқы қадам
+                    </h3>
+                    
+                    <p id="timeline-desc" class="text-md md:text-lg text-[#2C2115] font-serif leading-relaxed italic">
+                        Түркістан өлкесіндегі ең алғашқы білім ошақтарының бірі болып мектеп іргетасы қаланды. Жүздеген бала алғаш рет сауат ашуға мүмкіндік алды.
+                    </p>
+
+                    <div class="p-4 bg-orient-cream rounded-xl border-l-4 border-gold italic text-xs text-[#8C6239] flex items-start gap-3">
+                      <svg class="w-5 h-5 text-gold shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path></svg>
+                      <div>
+                        <strong class="font-sans tracking-wide uppercase block text-orient-blue mb-1">Осы кезеңнің басты жетістігі:</strong>
+                        <span id="timeline-achievement">Алғашқы ұстаздар мен ұлттық сыныптар жинақталды.</span>
                       </div>
+                    </div>
+                  </div>
 
-                      {/* Cover Emblem Emblem */}
-                      <div className="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-[#D4AF37] p-2 bg-white/80 shadow-md flex items-center justify-center my-4 relative">
-                        <div className="absolute inset-1 border border-[#D4AF37]/30 rounded-full"></div>
-                        <svg className="w-24 h-24 text-[#1E3A8A]" viewBox="0 0 100 100" fill="none">
-                          <circle cx="50" cy="50" r="45" stroke="#D4AF37" strokeWidth="1" />
-                          {/* Book and Sunburst */}
-                          <path d="M30 65 C 40 55, 50 55, 50 65 C 50 55, 60 55, 70 65 L 70 40 C 60 30, 50 30, 50 40 C 50 30, 40 30, 30 40 Z" fill="#1E3A8A" opacity="0.8" />
-                          <path d="M50 35 L 50 15 M 40 37 L 30 20 M 60 37 L 70 20 M 50 65 L 50 85" stroke="#D4AF37" strokeWidth="2.5" strokeLinecap="round" />
-                          <circle cx="50" cy="50" r="4" fill="#D4AF37" />
+                  <!-- Сәндік фоторамка -->
+                  <div class="md:col-span-5 flex justify-center">
+                    <div class="relative p-3 bg-white rounded-2xl border-2 border-gold shadow-xl rotate-2 hover:rotate-0 transition-transform duration-500 max-w-sm w-full">
+                      <div class="absolute inset-1.5 border border-gold/40 rounded-xl pointer-events-none"></div>
+                      
+                      <!-- Көне фотосурет әсері -->
+                      <img id="timeline-img" src="https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=800&q=80" class="w-full h-64 object-cover rounded-xl filter sepia-[30%]" alt="Тарихи сурет">
+
+                      <!-- Мөр тәріздес белгіше -->
+                      <div class="absolute -bottom-4 -right-4 w-12 h-12 rounded-full bg-orient-blue border-2 border-gold flex items-center justify-center text-gold font-bold text-xs shadow-lg">
+                        13
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. ФОТОГАЛЕРЕЯ (КАРУСЕЛЬ) -->
+        <section id="gallery" class="py-24 px-4 bg-gradient-to-b from-orient-cream to-orient-parchment relative overflow-hidden">
+            <div class="max-w-6xl mx-auto">
+                
+                <div class="text-center mb-16 fade-in-up">
+                  <span class="text-xs font-sans tracking-[0.25em] uppercase text-[#8C6239] font-bold">Тарих парақтары мен заманауи сәттер</span>
+                  <h2 class="text-3xl md:text-5xl font-extrabold text-orient-blue tracking-wider uppercase font-serif mt-2">
+                    Мектеп тынысы мен жарқын сәттер
+                  </h2>
+                  <div class="w-20 h-[2px] bg-gold mx-auto mt-4"></div>
+                </div>
+
+                <!-- Негізгі карусель шеңбері -->
+                <div class="relative bg-white rounded-3xl p-4 md:p-8 border border-gold/30 shadow-2xl overflow-hidden fade-in-up">
+                  <div class="relative aspect-[16/9] w-full max-h-[480px] overflow-hidden rounded-2xl group">
+                    <img id="gallery-image" src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=1200&q=80" class="w-full h-full object-cover transition-transform duration-1000 scale-100" alt="Галерея">
+                    
+                    <!-- Көлеңкелеу әсері -->
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-transparent to-transparent"></div>
+
+                    <!-- Сипаттама мәтіні -->
+                    <div class="absolute bottom-0 left-0 right-0 p-6 md:p-10 text-white space-y-2">
+                      <h3 id="gallery-title" class="text-xl md:text-3xl font-bold font-serif text-gold">
+                        Ардақты ұстаздар ұжымы
+                      </h3>
+                      <p id="gallery-desc" class="text-xs md:text-md text-white/90 italic font-sans max-w-2xl leading-relaxed">
+                        Білім нәрімен сусындатқан, жүрегі жылы ұстаздарымыздың бүгінгі жарқын бейнесі.
+                      </p>
+                    </div>
+                  </div>
+
+                  <!-- Басқару түймелері -->
+                  <div class="flex items-center justify-between mt-6">
+                    <div class="flex gap-2.5" id="gallery-dots-container">
+                      <!-- Тоқшалар скрипт арқылы жасалады -->
+                    </div>
+
+                    <div class="flex items-center gap-4">
+                      <button onclick="prevGallerySlide()" class="p-3.5 rounded-full border border-gold/30 text-[#8C6239] bg-white hover:bg-orient-blue hover:text-white transition-all duration-300 shadow-md">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"></path></svg>
+                      </button>
+                      <button onclick="nextGallerySlide()" class="p-3.5 rounded-full border border-gold/30 text-[#8C6239] bg-white hover:bg-orient-blue hover:text-white transition-all duration-300 shadow-md">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"></path></svg>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- 5. МЕКТЕП ЖЕТІСТІКТЕРІ (САНАУЫШТАР КЕСТЕСІ) -->
+        <section id="achievements" class="py-24 px-4 bg-gradient-to-b from-orient-parchment to-orient-cream border-t border-gold/20 relative">
+            <div class="max-w-6xl mx-auto text-center">
+                <h2 class="text-3xl md:text-5xl font-extrabold text-orient-blue tracking-wider uppercase font-serif mb-4 fade-in-up">
+                    Біз мақтан етеміз
+                </h2>
+                <p class="text-xs uppercase tracking-widest text-[#8C6239] font-sans font-bold mb-12 fade-in-up">Терең тарих, саналы білім мен озық тәрбие белестері</p>
+
+                <!-- Жетістіктер торы -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-10">
+                  
+                  <!-- Карта 1 -->
+                  <div class="p-8 bg-white/80 rounded-2xl border border-gold/30 shadow-lg flex flex-col items-center hover:scale-105 transition-transform duration-300">
+                    <span id="stat-years" class="text-4xl md:text-6xl font-extrabold text-orient-blue font-mono block">0</span>
+                    <span class="w-10 h-[1.5px] bg-gold my-3"></span>
+                    <span class="text-xs md:text-sm text-[#8C6239] font-sans uppercase font-bold tracking-wider">жылдық даңқты тарих</span>
+                  </div>
+
+                  <!-- Карта 2 -->
+                  <div class="p-8 bg-white/80 rounded-2xl border border-gold/30 shadow-lg flex flex-col items-center hover:scale-105 transition-transform duration-300">
+                    <span id="stat-graduates" class="text-4xl md:text-6xl font-extrabold text-orient-blue font-mono block">0</span>
+                    <span class="w-10 h-[1.5px] bg-gold my-3"></span>
+                    <span class="text-xs md:text-sm text-[#8C6239] font-sans uppercase font-bold tracking-wider">мектеп түлектері</span>
+                  </div>
+
+                  <!-- Карта 3 -->
+                  <div class="p-8 bg-white/80 rounded-2xl border border-gold/30 shadow-lg flex flex-col items-center hover:scale-105 transition-transform duration-300">
+                    <span id="stat-teachers" class="text-4xl md:text-6xl font-extrabold text-orient-blue font-mono block">0</span>
+                    <span class="w-10 h-[1.5px] bg-gold my-3"></span>
+                    <span class="text-xs md:text-sm text-[#8C6239] font-sans uppercase font-bold tracking-wider">білікті ұстаздар</span>
+                  </div>
+
+                  <!-- Карта 4 -->
+                  <div class="p-8 bg-white/80 rounded-2xl border border-gold/30 shadow-lg flex flex-col items-center hover:scale-105 transition-transform duration-300">
+                    <span id="stat-medals" class="text-4xl md:text-6xl font-extrabold text-orient-blue font-mono block">0</span>
+                    <span class="w-10 h-[1.5px] bg-gold my-3"></span>
+                    <span class="text-xs md:text-sm text-[#8C6239] font-sans uppercase font-bold tracking-wider">«Алтын белгі» иегерлері</span>
+                  </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. ИНТЕРБЕЛСЕНДІ 3D ГЕРБ -->
+        <section class="py-24 px-4 bg-orient-cream flex flex-col items-center justify-center text-center relative overflow-hidden">
+            <div class="max-w-xl mx-auto">
+                <h3 class="text-xs font-sans tracking-[0.25em] uppercase text-[#8C6239] font-bold mb-2">Мектеп Елтаңбасы</h3>
+                <h2 class="text-2xl md:text-4xl font-serif text-orient-blue font-bold mb-6">Ұлттық білімнің символы</h2>
+                <p class="text-sm text-gray-600 mb-8 px-4 leading-relaxed font-sans">
+                    Елтаңбаны тінтуірмен (немесе ұялы телефонда саусақпен) жан-жаққа айналдырып көріңіз. Оның бетіндегі жылтыр шұғыла білімнің мәңгілік жарығын білдіреді.
+                </p>
+
+                <!-- 3D Контейнер -->
+                <div id="emblem-container" class="relative w-64 h-64 md:w-80 md:h-80 mx-auto cursor-grab active:cursor-grabbing perspective-1000 flex items-center justify-center">
+                  <div id="emblem-badge" class="w-56 h-56 md:w-72 md:h-72 rounded-full bg-gradient-to-br from-[#EADEC9] via-white to-gold p-4 shadow-2xl transition-transform duration-100 ease-out flex items-center justify-center relative transform-style-3d">
+                    
+                    <!-- Жылтырау әсері -->
+                    <div class="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-white/40 to-transparent pointer-events-none"></div>
+
+                    <!-- Ішкі көк қалқан -->
+                    <div class="w-full h-full rounded-full bg-orient-blue border-4 border-gold flex flex-col items-center justify-between p-4 relative overflow-hidden">
+                      <div class="absolute inset-4 rounded-full border border-gold/30 pointer-events-none"></div>
+                      
+                      <div class="text-[10px] tracking-widest text-gold font-sans font-bold mt-2">ALISHER NAVOI</div>
+
+                      <!-- Раскрытая книга и солнце -->
+                      <div class="my-auto relative">
+                        <svg class="w-24 h-24 text-amber-300 drop-shadow-md" viewBox="0 0 100 100" fill="currentColor">
+                          <path d="M50 30 L 50 10" stroke="#FFE6A5" stroke-width="4" stroke-linecap="round" />
+                          <circle cx="50" cy="30" r="6" fill="#D4AF37" />
+                          <path d="M25 65 C 40 55, 50 55, 50 65 C 50 55, 60 55, 75 65 L 75 40 C 60 30, 50 30, 50 40 C 50 30, 25 30, 25 40 Z" />
+                          <circle cx="50" cy="50" r="14" fill="#1E3A8A" stroke="#D4AF37" stroke-width="2" />
+                          <text x="50" y="54" font-size="12" fill="#D4AF37" font-weight="bold" text-anchor="middle" font-family="sans-serif">13</text>
                         </svg>
                       </div>
 
-                      <div className="mb-6">
-                        <h2 className="text-[#1E3A8A] text-xl md:text-2xl font-bold tracking-wider leading-relaxed">Ә. НАУАИ АТЫНДАҒЫ</h2>
-                        <h3 className="text-[#8C6239] text-md md:text-lg font-sans tracking-widest uppercase mt-1">№13 МЕКТЕП-ГИМНАЗИЯСЫ</h3>
-                        <p className="text-[#D4AF37] text-xs font-serif mt-3 italic">«Қазақстанның асыл білім шаңырағы»</p>
-                      </div>
-
-                      <div className="text-xs text-[#8C6239]/70 font-sans tracking-widest pb-2">
-                        1931 - 2026
-                      </div>
+                      <div class="text-[9px] tracking-widest text-white font-sans uppercase font-bold mb-2">МЕКТЕП-ГИМНАЗИЯ</div>
                     </div>
-                  )}
 
-                  {introStep === 2 && (
-                    <div className="w-full h-full bg-gradient-to-br from-[#FAF6EE] to-[#EEDFB8] p-8 md:p-12 flex flex-col items-center justify-center text-center relative animate-page-turn">
-                      {/* Left Page (Historical Quote) */}
-                      <div className="max-w-md">
-                        {/* Ornament divider */}
-                        <div className="mb-6 text-[#D4AF37] text-3xl">❖</div>
-                        <p className="text-lg md:text-xl text-[#2C2115] italic font-serif leading-relaxed mb-6">
-                          «Тілге көңіл бөлген — елге көңіл бөлген, ал ғылымға ұмтылған — болашаққа жол ашқан.»
-                        </p>
-                        <div className="w-20 h-[1.5px] bg-[#D4AF37] mx-auto mb-3"></div>
-                        <p className="text-sm md:text-md text-[#8C6239] font-sans uppercase tracking-widest font-semibold">
-                          — Әлішер Науаи
-                        </p>
-                        <p className="text-xs text-[#8C6239]/60 mt-1">Ұлы ойшыл, ақын</p>
-                      </div>
-                    </div>
-                  )}
-
-                  {introStep === 3 && (
-                    <div className="w-full h-full bg-gradient-to-br from-[#FAF6EE] to-[#EEDFB8] p-8 md:p-12 flex flex-col items-center justify-between text-center relative animate-page-turn">
-                      {/* Right Page (The Big Milestone Reveal) */}
-                      <div className="text-center mt-6">
-                        <span className="text-[#8C6239] text-xs font-sans tracking-widest uppercase block">Ұлы мерейтой</span>
-                        <div className="w-16 h-[1px] bg-[#D4AF37] mx-auto mt-2"></div>
-                      </div>
-
-                      <div className="my-auto">
-                        {/* Giant Golden Typography */}
-                        <div className="relative inline-block">
-                          <h1 className="text-7xl md:text-9xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] via-[#F9E4B7] to-[#B89742] tracking-wider animate-pulse drop-shadow-md">
-                            95
-                          </h1>
-                          <div className="absolute -top-4 -right-4 text-amber-400 animate-spin text-xl">✦</div>
-                          <div className="absolute -bottom-2 -left-4 text-amber-500 text-lg">✦</div>
-                        </div>
-                        <h2 className="text-2xl md:text-4xl font-serif text-[#1E3A8A] font-bold tracking-widest mt-2">
-                          ЖЫЛДЫҚ
-                        </h2>
-                        <p className="text-xs md:text-sm text-[#8C6239] font-sans tracking-widest uppercase mt-3">
-                          ДАҢҚТЫ ТАРИХ ПЕН ЖАРҚЫН БОЛАШАҚ
-                        </p>
-                      </div>
-
-                      <div className="text-xs text-[#8C6239]/60 italic pb-2">
-                        Есіктер ашылуда, саяхат басталды...
-                      </div>
-                    </div>
-                  )}
-
-                </div>
-
-                {/* Helpful Instruction under book */}
-                <p className="mt-8 text-[#8C6239] text-xs md:text-sm font-sans tracking-widest uppercase animate-pulse">
-                  {introStep === 1 && "Мерейтойлық кітап ашылуда..."}
-                  {introStep === 2 && "Ойшылдың алтын сөзі..."}
-                  {introStep === 3 && "Шежірелі білім бесігіне қош келдіңіз!"}
-                </p>
-              </div>
-            )}
-
-          </div>
-        </div>
-      )}
-
-      {/* ==================== MAIN SITE PORTAL ==================== */}
-      <div className={`transition-opacity duration-1000 ${appState === 'main' ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-        
-        {/* Navigation Bar */}
-        <header className={`fixed top-0 left-0 right-0 z-30 transition-all duration-300 ${scrolled ? 'bg-[#FAF6EE]/90 backdrop-blur-md shadow-md py-3' : 'bg-transparent py-5'}`}>
-          <div className="max-w-7xl mx-auto px-6 flex items-center justify-between">
-            {/* Logo area */}
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full border border-[#D4AF37] bg-white flex items-center justify-center shadow-sm">
-                <span className="text-[#1E3A8A] font-bold text-lg">13</span>
-              </div>
-              <div>
-                <h1 className="text-md font-bold tracking-wider text-[#1E3A8A] leading-none">Ә. НАУАИ №13</h1>
-                <span className="text-[10px] uppercase tracking-widest text-[#8C6239] font-sans">Мектеп-Гимназиясы</span>
-              </div>
-            </div>
-
-            {/* Nav Menu */}
-            <nav className="hidden md:flex items-center gap-8 text-xs font-sans uppercase tracking-widest font-medium text-[#2C2115]">
-              <a href="#hero" className="hover:text-[#D4AF37] transition">Басты бет</a>
-              <a href="#invitation" className="hover:text-[#D4AF37] transition">Шақыру</a>
-              <a href="#history" className="hover:text-[#D4AF37] transition">Шежіре</a>
-              <a href="#gallery" className="hover:text-[#D4AF37] transition">Галерея</a>
-              <a href="#achievements" className="hover:text-[#D4AF37] transition">Жетістіктер</a>
-            </nav>
-
-            {/* Quick Action Invitation Button */}
-            <a 
-              href="#invitation" 
-              className="px-5 py-2.5 rounded-full bg-gradient-to-r from-[#1E3A8A] to-[#1E40AF] text-[#FAF6EE] text-xs font-sans tracking-wider uppercase shadow-md hover:shadow-lg hover:scale-105 transition-all duration-300 border border-[#D4AF37]/30"
-            >
-              Қатысу
-            </a>
-          </div>
-        </header>
-
-        {/* 1. HERO SECTION */}
-        <section id="hero" className="relative min-h-screen flex flex-col justify-between pt-24 pb-12 overflow-hidden px-4 md:px-8">
-          {/* Cinematic Background Simulation (Drone motion representation with slow Ken Burns effect image & light leaks) */}
-          <div className="absolute inset-0 z-0">
-            <img 
-              src="https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1920&q=80" 
-              className="w-full h-full object-cover object-center opacity-25 scale-105 animate-ken-burns filter sepia-[20%]" 
-              alt="School Campus"
-            />
-            {/* Cinematic Gradients & Light Leaks */}
-            <div className="absolute inset-0 bg-gradient-to-t from-[#FAF6EE] via-transparent to-[#FAF6EE]"></div>
-            <div className="absolute inset-0 bg-gradient-to-r from-[#FAF6EE]/90 via-transparent to-[#FAF6EE]/90"></div>
-            {/* Sun glare top right */}
-            <div className="absolute top-10 right-10 w-[500px] h-[500px] rounded-full bg-[#FFE6A5]/20 blur-[120px] pointer-events-none"></div>
-          </div>
-
-          {/* Top Decorative Border */}
-          <div className="w-full max-w-4xl mx-auto text-center mt-6 z-10 relative">
-            <div className="inline-flex items-center gap-4 mb-4">
-              <span className="h-[1px] w-12 bg-gradient-to-r from-transparent to-[#D4AF37]"></span>
-              <span className="text-[#D4AF37] font-sans tracking-[0.3em] uppercase text-xs md:text-sm">ТҮРКІСТАН ҚАЛАСЫ</span>
-              <span className="h-[1px] w-12 bg-gradient-to-l from-transparent to-[#D4AF37]"></span>
-            </div>
-          </div>
-
-          {/* Central Titles */}
-          <div className="w-full max-w-5xl mx-auto text-center my-auto z-10 relative flex flex-col items-center">
-            {/* Giant Elegant 95 Zhyl Title */}
-            <div className="relative mb-6">
-              <div className="absolute -inset-4 bg-[#FAF6EE]/60 blur-xl rounded-full"></div>
-              <h1 className="relative text-7xl md:text-9xl font-extrabold tracking-wider leading-none text-transparent bg-clip-text bg-gradient-to-b from-[#1E3A8A] via-[#2563EB] to-[#1D4ED8]">
-                95 ЖЫЛ
-              </h1>
-              {/* Overlaying gold star sparkles */}
-              <div className="absolute -top-3 left-1/4 text-amber-500 text-xl animate-bounce">✦</div>
-              <div className="absolute -bottom-3 right-1/4 text-amber-400 text-lg animate-pulse">✦</div>
-            </div>
-
-            {/* School Name */}
-            <h2 className="text-2xl md:text-5xl font-extrabold text-[#8C6239] tracking-wider uppercase mb-4 max-w-4xl leading-tight">
-              Ә. НАУАИ АТЫНДАҒЫ №13 МЕКТЕП-ГИМНАЗИЯ
-            </h2>
-
-            {/* Subtitle / Devise */}
-            <div className="w-24 h-[1px] bg-[#D4AF37] my-3"></div>
-            <p className="text-md md:text-xl text-[#2C2115] italic font-serif max-w-2xl px-4 leading-relaxed mb-8">
-              “Ұрпақтар сабақтастығы – білім мен тәрбиенің алтын бесігі”
-            </p>
-
-            {/* Action Buttons */}
-            <div className="flex flex-col sm:flex-row items-center gap-4">
-              <a 
-                href="#invitation" 
-                className="px-8 py-4 rounded-full bg-[#1E3A8A] text-[#FAF6EE] font-sans text-xs tracking-widest uppercase font-semibold hover:bg-[#D4AF37] transition-all duration-300 shadow-lg hover:shadow-xl hover:scale-105 border border-[#FAF6EE]/10 flex items-center gap-2"
-              >
-                <span>Толық шақыру кітабы</span>
-                <ChevronRight className="w-4 h-4" />
-              </a>
-              <a 
-                href="#history" 
-                className="px-8 py-4 rounded-full bg-white/95 backdrop-blur text-[#1E3A8A] border-2 border-[#D4AF37]/50 font-sans text-xs tracking-widest uppercase font-semibold hover:bg-[#D4AF37]/10 transition-all duration-300 flex items-center gap-2"
-              >
-                <span>Мектеп тарихы</span>
-              </a>
-            </div>
-          </div>
-
-          {/* Bottom Live Countdown Wrapper */}
-          <div className="w-full max-w-4xl mx-auto z-10 relative">
-            <div className="bg-[#FAF6EE]/85 backdrop-blur-md rounded-2xl p-6 border border-[#D4AF37]/30 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="text-center md:text-left">
-                <p className="text-xs text-[#8C6239] font-sans tracking-widest uppercase">Салтанатты кешке дейін:</p>
-                <h4 className="text-lg font-bold text-[#1E3A8A] font-serif">10 Қазан 2026, 18:00</h4>
-              </div>
-
-              {/* Countdown Numbers */}
-              <div className="grid grid-cols-4 gap-4 md:gap-6">
-                <div className="text-center bg-white/90 px-3 md:px-5 py-2.5 rounded-xl border border-[#D4AF37]/20 shadow-sm min-w-[70px]">
-                  <span className="block text-xl md:text-2xl font-bold text-[#1E3A8A] tabular-nums font-mono">{countdown.days}</span>
-                  <span className="text-[9px] uppercase tracking-wider text-[#8C6239] font-sans">күн</span>
-                </div>
-                <div className="text-center bg-white/90 px-3 md:px-5 py-2.5 rounded-xl border border-[#D4AF37]/20 shadow-sm min-w-[70px]">
-                  <span className="block text-xl md:text-2xl font-bold text-[#1E3A8A] tabular-nums font-mono">{countdown.hours}</span>
-                  <span className="text-[9px] uppercase tracking-wider text-[#8C6239] font-sans">сағат</span>
-                </div>
-                <div className="text-center bg-white/90 px-3 md:px-5 py-2.5 rounded-xl border border-[#D4AF37]/20 shadow-sm min-w-[70px]">
-                  <span className="block text-xl md:text-2xl font-bold text-[#1E3A8A] tabular-nums font-mono">{countdown.minutes}</span>
-                  <span className="text-[9px] uppercase tracking-wider text-[#8C6239] font-sans">минут</span>
-                </div>
-                <div className="text-center bg-white/90 px-3 md:px-5 py-2.5 rounded-xl border border-[#D4AF37]/20 shadow-sm min-w-[70px]">
-                  <span className="block text-xl md:text-2xl font-bold text-[#1E3A8A] tabular-nums font-mono">{countdown.seconds}</span>
-                  <span className="text-[9px] uppercase tracking-wider text-[#8C6239] font-sans">секунд</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Scroll down indicator */}
-            <div className="flex justify-center mt-6">
-              <a href="#invitation" className="animate-bounce p-2 bg-white/80 rounded-full border border-[#D4AF37]/20 text-[#1E3A8A] shadow">
-                <ChevronDown className="w-5 h-5" />
-              </a>
-            </div>
-          </div>
-        </section>
-
-        {/* 2. INVITATION SECTION (Parchment Card Style) */}
-        <section id="invitation" className="py-24 px-4 relative overflow-hidden bg-gradient-to-b from-[#FAF6EE] to-[#F5ECD7]">
-          {/* Authentic Islamic Geometric Star Background Pattern */}
-          <div className="absolute inset-0 opacity-[0.03] pointer-events-none flex items-center justify-center">
-            <svg className="w-[800px] h-[800px] text-emerald-950" viewBox="0 0 100 100" fill="currentColor">
-              <polygon points="50,0 60,35 95,35 65,55 80,90 50,70 20,90 35,55 5,35 40,35" />
-              <polygon points="50,100 40,65 5,65 35,45 20,10 50,30 80,10 65,45 95,65 60,65" transform="rotate(45 50 50)" />
-            </svg>
-          </div>
-
-          <div className="max-w-4xl mx-auto">
-            {/* Parchment Box */}
-            <div className="relative bg-gradient-to-br from-[#FCFBF7] to-[#F1E4C3] rounded-3xl p-8 md:p-16 border-2 border-[#D4AF37]/40 shadow-2xl relative overflow-hidden">
-              
-              {/* Corner Ornaments */}
-              <div className="absolute top-6 left-6 text-[#D4AF37] text-2xl">✤</div>
-              <div className="absolute top-6 right-6 text-[#D4AF37] text-2xl">✤</div>
-              <div className="absolute bottom-6 left-6 text-[#D4AF37] text-2xl">✤</div>
-              <div className="absolute bottom-6 right-6 text-[#D4AF37] text-2xl">✤</div>
-
-              {/* Gold borders on card */}
-              <div className="absolute inset-4 border border-[#D4AF37]/25 rounded-2xl pointer-events-none"></div>
-              <div className="absolute inset-5 border border-[#D4AF37]/10 rounded-2xl pointer-events-none"></div>
-
-              {/* Decorative Header Badge */}
-              <div className="text-center mb-8 relative z-10">
-                <div className="inline-block p-3 bg-white rounded-full border border-[#D4AF37] shadow-sm mb-4">
-                  <Sparkles className="w-6 h-6 text-[#D4AF37]" />
-                </div>
-                <h3 className="text-xs font-sans tracking-[0.25em] uppercase text-[#8C6239] font-semibold mb-2">Салтанатты шақыру</h3>
-                <div className="w-16 h-[1.5px] bg-[#D4AF37] mx-auto"></div>
-              </div>
-
-              {/* Content text */}
-              <div className="text-center space-y-6 md:space-y-8 relative z-10 max-w-2xl mx-auto">
-                <p className="text-xl md:text-2xl text-[#2C2115] font-serif leading-relaxed italic">
-                  Құрметті ұстаздар, ардақты түлектер, қадірлі қонақтар!
-                </p>
-
-                <p className="text-md md:text-lg text-[#8C6239]/90 font-sans tracking-wide leading-relaxed">
-                  Сіздерді білім мен тәрбие ордасы — <strong className="text-[#1E3A8A]">Әлішер Науаи атындағы №13 мектеп-гимназиясының</strong> ардақты да шежірелі мерекесі
-                </p>
-
-                {/* Shimmering Giant Text */}
-                <div className="py-6">
-                  <h2 className="text-4xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-[#D4AF37] via-[#FFF] to-[#D4AF37] bg-[length:200%_auto] animate-shimmer tracking-wider drop-shadow-sm font-serif">
-                    95 ЖЫЛДЫҚ
-                  </h2>
-                  <p className="text-xs uppercase tracking-[0.3em] text-[#8C6239] mt-2 font-sans font-bold">Мерейтойына арналған</p>
-                </div>
-
-                <p className="text-xl md:text-3xl text-[#1E3A8A] font-bold tracking-wide italic font-serif">
-                  салтанатты кешке
-                </p>
-
-                <p className="text-lg md:text-2xl text-[#8C6239] font-serif italic">
-                  шын жүректен шақырамыз!
-                </p>
-
-                <div className="pt-6">
-                  <p className="text-xs text-[#2C2115]/60 italic font-sans">«Ұстаздық еткен жалықпас, үйретуден балаға»</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Event Information Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-12 relative z-10">
-              
-              {/* Date Card */}
-              <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl border border-[#D4AF37]/30 shadow-md flex flex-col items-center text-center transition-all duration-300 hover:scale-105 hover:bg-white">
-                <div className="w-12 h-12 rounded-full bg-blue-50 text-[#1E3A8A] flex items-center justify-center mb-4 border border-[#D4AF37]/20 shadow-inner">
-                  <Calendar className="w-5 h-5" />
-                </div>
-                <h4 className="text-xs font-sans tracking-widest uppercase text-[#8C6239] mb-1">Күні</h4>
-                <p className="text-lg font-bold text-[#1E3A8A] font-serif">10 Қазан 2026 жыл</p>
-                <p className="text-xs text-[#8C6239]/70 mt-1">Сенбі, Күздің шуақты күні</p>
-              </div>
-
-              {/* Time Card */}
-              <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl border border-[#D4AF37]/30 shadow-md flex flex-col items-center text-center transition-all duration-300 hover:scale-105 hover:bg-white">
-                <div className="w-12 h-12 rounded-full bg-amber-50 text-amber-600 flex items-center justify-center mb-4 border border-[#D4AF37]/20 shadow-inner">
-                  <Clock className="w-5 h-5" />
-                </div>
-                <h4 className="text-xs font-sans tracking-widest uppercase text-[#8C6239] mb-1">Уақыты</h4>
-                <p className="text-lg font-bold text-[#1E3A8A] font-serif">18:00 - Салтанатты кеш</p>
-                <p className="text-xs text-[#8C6239]/70 mt-1">Ресми қабылдау мен концерт</p>
-              </div>
-
-              {/* Location Card */}
-              <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl border border-[#D4AF37]/30 shadow-md flex flex-col items-center text-center transition-all duration-300 hover:scale-105 hover:bg-white">
-                <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 border border-[#D4AF37]/20 shadow-inner">
-                  <MapPin className="w-5 h-5" />
-                </div>
-                <h4 className="text-xs font-sans tracking-widest uppercase text-[#8C6239] mb-1">Мекенжайы</h4>
-                <p className="text-lg font-bold text-[#1E3A8A] font-serif">Түркістан қаласы</p>
-                <p className="text-xs text-[#8C6239]/70 mt-1">Төле Би көшесі, 46 ғимарат</p>
-              </div>
-
-            </div>
-          </div>
-        </section>
-
-        {/* 3. HISTORY SECTION (Horizontal timeline & antique book design) */}
-        <section id="history" className="py-24 px-4 bg-gradient-to-b from-[#F5ECD7] to-[#FAF6EE]">
-          <div className="max-w-6xl mx-auto">
-            {/* Header */}
-            <div className="text-center mb-16">
-              <div className="inline-flex items-center gap-3 mb-2">
-                <History className="w-5 h-5 text-[#D4AF37]" />
-                <span className="text-xs font-sans tracking-[0.2em] uppercase text-[#8C6239] font-semibold">95 ЖЫЛДЫҚ САЛАТАНАТ</span>
-              </div>
-              <h2 className="text-3xl md:text-5xl font-extrabold text-[#1E3A8A] tracking-wider uppercase font-serif">
-                Шежірелі мектеп тарихы
-              </h2>
-              <div className="w-20 h-[2px] bg-[#D4AF37] mx-auto mt-4"></div>
-            </div>
-
-            {/* Timeline selector row */}
-            <div className="flex justify-between items-center gap-2 overflow-x-auto pb-4 mb-12 border-b border-[#D4AF37]/30 scrollbar-thin">
-              {Object.keys(historyData).map((year) => (
-                <button
-                  key={year}
-                  onClick={() => setActiveTimelineYear(year)}
-                  className={`px-5 py-3 rounded-full text-sm font-sans font-bold tracking-wider transition-all duration-300 min-w-[90px] ${activeTimelineYear === year ? 'bg-[#1E3A8A] text-white shadow-md scale-110' : 'bg-white/60 text-[#8C6239] hover:bg-[#D4AF37]/20 border border-[#D4AF37]/20'}`}
-                >
-                  {year}
-                </button>
-              ))}
-            </div>
-
-            {/* Focused timeline year showcase (Parchment book design) */}
-            <div className="bg-white/90 backdrop-blur-sm rounded-3xl p-6 md:p-12 border border-[#D4AF37]/30 shadow-xl grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
-              
-              {/* Year info (6 cols) */}
-              <div className="md:col-span-7 space-y-6">
-                <div className="inline-block px-4 py-1.5 rounded-full bg-amber-100 border border-[#D4AF37]/30 text-[#8C6239] text-xs font-sans font-bold tracking-widest uppercase">
-                  ТАРИХИ ТАҚЫРЫП • {activeTimelineYear}
-                </div>
-                
-                <h3 className="text-2xl md:text-4xl font-extrabold text-[#1E3A8A] font-serif leading-tight">
-                  {historyData[activeTimelineYear].title}
-                </h3>
-                
-                <p className="text-md md:text-lg text-[#2C2115] font-serif leading-relaxed italic">
-                  {historyData[activeTimelineYear].desc}
-                </p>
-
-                <div className="p-4 bg-[#FAF6EE] rounded-xl border-l-4 border-[#D4AF37] italic text-xs text-[#8C6239] flex items-start gap-3">
-                  <Award className="w-5 h-5 text-[#D4AF37] shrink-0 mt-0.5" />
-                  <div>
-                    <strong className="font-sans tracking-wide uppercase block text-[#1E3A8A] mb-1">Сол кезеңдегі басты мақтаныш:</strong>
-                    {historyData[activeTimelineYear].achievement}
                   </div>
                 </div>
-              </div>
 
-              {/* Year Image frame inside luxury decorative borders (5 cols) */}
-              <div className="md:col-span-5 flex justify-center">
-                <div className="relative p-3 bg-white rounded-2xl border-2 border-[#D4AF37] shadow-xl rotate-2 hover:rotate-0 transition-transform duration-500 max-w-sm w-full">
-                  <div className="absolute inset-1.5 border border-[#D4AF37]/40 rounded-xl pointer-events-none"></div>
-                  
-                  {/* Photo with old paper filter effect */}
-                  <img 
-                    src={historyData[activeTimelineYear].image} 
-                    className="w-full h-64 object-cover rounded-xl grayscale hover:grayscale-0 transition-all duration-700" 
-                    alt={historyData[activeTimelineYear].title}
-                  />
-
-                  {/* Stamp/Ornament mark on photos */}
-                  <div className="absolute -bottom-4 -right-4 w-12 h-12 rounded-full bg-[#1E3A8A] border-2 border-[#D4AF37] flex items-center justify-center text-[#D4AF37] font-bold text-[10px] shadow-lg">
-                    13
-                  </div>
-                </div>
-              </div>
-
+                <div class="mt-6 text-xs italic text-[#8C6239]">Бұл рәміз — тұрақтылық пен мәңгілік білімнің салтанаты.</div>
             </div>
-          </div>
         </section>
 
-        {/* 4. PREMIUM GALLERY SECTION (Interactive Carousel) */}
-        <section id="gallery" className="py-24 px-4 bg-gradient-to-b from-[#FAF6EE] to-[#F1E9D2] relative overflow-hidden">
-          
-          <div className="max-w-6xl mx-auto">
-            {/* Header */}
-            <div className="text-center mb-16">
-              <div className="inline-flex items-center gap-3 mb-2">
-                <span className="text-xs font-sans tracking-[0.25em] uppercase text-[#8C6239] font-bold">ФОТОБАЯН</span>
-              </div>
-              <h2 className="text-3xl md:text-5xl font-extrabold text-[#1E3A8A] tracking-wider uppercase font-serif">
-                Мектеп тынысы мен сәттері
-              </h2>
-              <div className="w-20 h-[2px] bg-[#D4AF37] mx-auto mt-4"></div>
-            </div>
+        <!-- 7. САЛАТАНАТТЫ ФИНАЛ МЕН СІЛТЕМЕЛЕР -->
+        <footer class="relative bg-gradient-to-b from-orient-cream via-[#EEDEB2]/40 to-orient-cream py-24 px-4 overflow-hidden text-center">
+            <div class="max-w-4xl mx-auto space-y-8 relative z-10">
+                <div class="text-3xl text-gold tracking-widest">❖ ◆ ❖</div>
 
-            {/* Big Frame Showcase */}
-            <div className="relative bg-white rounded-3xl p-4 md:p-8 border border-[#D4AF37]/30 shadow-2xl overflow-hidden">
-              <div className="relative aspect-[16/9] w-full max-h-[480px] overflow-hidden rounded-2xl group">
-                <img 
-                  src={galleryPhotos[activeGalleryIndex].url} 
-                  className="w-full h-full object-cover transition-transform duration-1000 scale-100 group-hover:scale-105"
-                  alt={galleryPhotos[activeGalleryIndex].title}
-                />
-                
-                {/* Dark gradient shadow inside image */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent"></div>
+                <p class="text-xs uppercase tracking-[0.3em] text-[#8C6239] font-sans font-bold">Ыстық ықыласпен күтеміз</p>
 
-                {/* Info Text Overlay */}
-                <div className="absolute bottom-0 left-0 right-0 p-6 md:p-10 text-white space-y-2">
-                  <h3 className="text-xl md:text-3xl font-bold font-serif text-[#D4AF37]">
-                    {galleryPhotos[activeGalleryIndex].title}
-                  </h3>
-                  <p className="text-xs md:text-md text-white/90 italic font-sans max-w-2xl leading-relaxed">
-                    {galleryPhotos[activeGalleryIndex].desc}
-                  </p>
-                </div>
-              </div>
+                <h2 class="text-4xl md:text-6xl font-serif text-orient-blue font-bold">
+                  «Біз сіздерді асыға күтеміз!»
+                </h2>
 
-              {/* Controls */}
-              <div className="flex items-center justify-between mt-6">
-                <div className="flex gap-2">
-                  {galleryPhotos.map((_, idx) => (
-                    <button 
-                      key={idx}
-                      onClick={() => setActiveGalleryIndex(idx)}
-                      className={`h-2.5 rounded-full transition-all duration-300 ${activeGalleryIndex === idx ? 'w-8 bg-[#1E3A8A]' : 'w-2.5 bg-gray-300'}`}
-                    />
-                  ))}
+                <p class="text-lg md:text-2xl text-[#8C6239] italic font-serif">
+                  Келіңіздер, мектебіміздің даңқты 95 жылдық тарихының жаңа бетін бірге парақтайық!
+                </p>
+
+                <div class="inline-block px-8 py-3.5 bg-orient-blue text-white rounded-full text-md font-sans tracking-widest font-bold border border-gold/40 shadow-2xl hover:scale-105 transition-all">
+                  10 ҚАЗАН 2026, 18:00
                 </div>
 
-                <div className="flex items-center gap-4">
-                  <button 
-                    onClick={handlePrevGallery}
-                    className="p-3 rounded-full border border-[#D4AF37]/30 text-[#8C6239] bg-white hover:bg-[#1E3A8A] hover:text-white transition duration-300 shadow-md"
-                  >
-                    <ChevronLeft className="w-5 h-5" />
-                  </button>
-                  <button 
-                    onClick={handleNextGallery}
-                    className="p-3 rounded-full border border-[#D4AF37]/30 text-[#8C6239] bg-white hover:bg-[#1E3A8A] hover:text-white transition duration-300 shadow-md"
-                  >
-                    <ChevronRight className="w-5 h-5" />
-                  </button>
+                <div class="pt-12 text-xs text-gray-500 font-sans space-y-2">
+                  <p>© 1931 - 2026 Әлішер Науаи атындағы №13 мектеп-гимназиясы.</p>
+                  <p>Барлық құқықтар қорғалған. Ұлы мерейтой құрметіне арнайы дайындалды.</p>
                 </div>
-              </div>
             </div>
 
-          </div>
-        </section>
-
-        {/* 5. INTERACTIVE ACHIEVEMENTS SECTION (Stat counters) */}
-        <section id="achievements-section" className="py-24 px-4 bg-gradient-to-b from-[#F1E9D2] to-[#FAF6EE] border-t border-[#D4AF37]/20 relative">
-          
-          <div className="max-w-6xl mx-auto text-center">
-            <h2 className="text-3xl md:text-5xl font-extrabold text-[#1E3A8A] tracking-wider uppercase font-serif mb-4">
-              Біз мақтан етеміз
-            </h2>
-            <p className="text-xs uppercase tracking-widest text-[#8C6239] mb-12 font-sans">Ұлы жылдар, терең білім, сапалы тәрбие</p>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-12">
-              
-              {/* Stat 1 */}
-              <div className="p-8 bg-white/80 rounded-2xl border border-[#D4AF37]/30 shadow-md flex flex-col items-center">
-                <span className="text-4xl md:text-6xl font-extrabold text-[#1E3A8A] font-mono block">
-                  {counters.years}
-                </span>
-                <span className="w-8 h-[2px] bg-[#D4AF37] my-3"></span>
-                <span className="text-xs md:text-sm text-[#8C6239] font-sans uppercase font-bold tracking-wider">жылдық даңқты тарих</span>
-              </div>
-
-              {/* Stat 2 */}
-              <div className="p-8 bg-white/80 rounded-2xl border border-[#D4AF37]/30 shadow-md flex flex-col items-center">
-                <span className="text-4xl md:text-6xl font-extrabold text-[#1E3A8A] font-mono block">
-                  {counters.graduates}+
-                </span>
-                <span className="w-8 h-[2px] bg-[#D4AF37] my-3"></span>
-                <span className="text-xs md:text-sm text-[#8C6239] font-sans uppercase font-bold tracking-wider">мектеп түлектері</span>
-              </div>
-
-              {/* Stat 3 */}
-              <div className="p-8 bg-white/80 rounded-2xl border border-[#D4AF37]/30 shadow-md flex flex-col items-center">
-                <span className="text-4xl md:text-6xl font-extrabold text-[#1E3A8A] font-mono block">
-                  {counters.teachers}+
-                </span>
-                <span className="w-8 h-[2px] bg-[#D4AF37] my-3"></span>
-                <span className="text-xs md:text-sm text-[#8C6239] font-sans uppercase font-bold tracking-wider">білікті ардақты ұстаздар</span>
-              </div>
-
-              {/* Stat 4 */}
-              <div className="p-8 bg-white/80 rounded-2xl border border-[#D4AF37]/30 shadow-md flex flex-col items-center">
-                <span className="text-4xl md:text-6xl font-extrabold text-[#1E3A8A] font-mono block">
-                  {counters.medals}+
-                </span>
-                <span className="w-8 h-[2px] bg-[#D4AF37] my-3"></span>
-                <span className="text-xs md:text-sm text-[#8C6239] font-sans uppercase font-bold tracking-wider">Алтын белгі иегерлері</span>
-              </div>
-
-            </div>
-          </div>
-        </section>
-
-        {/* 6. INTERACTIVE 3D BADGE EMBLEM */}
-        <section className="py-24 px-4 bg-gradient-to-b from-[#FAF6EE] to-[#FAF6EE] flex flex-col items-center justify-center text-center relative overflow-hidden">
-          <div className="max-w-xl mx-auto">
-            <h3 className="text-xs font-sans tracking-[0.25em] uppercase text-[#8C6239] font-bold mb-2">Герб пен Туралы шежіре</h3>
-            <h2 className="text-2xl md:text-4xl font-serif text-[#1E3A8A] font-bold mb-6">Мектептің заңды рәмізі</h2>
-            <p className="text-sm text-gray-600 mb-8 px-4 leading-relaxed font-sans">
-              Металды жылтыраған 3D нысанындағы елтаңбаны тінтуірмен (немесе саусақпен) айналдырып көріңіз. Ол күн сәулесі мен тарихтың тазалығын көрсетеді.
-            </p>
-
-            {/* Interactive 3D Rotation Badge Element */}
-            <div 
-              className="relative w-64 h-64 md:w-80 md:h-80 mx-auto cursor-grab active:cursor-grabbing perspective-1000 flex items-center justify-center"
-              onMouseMove={handleEmblemMouseMove}
-              onMouseLeave={handleEmblemMouseLeave}
-              onTouchMove={(e) => {
-                if (e.touches[0]) {
-                  const touch = e.touches[0];
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  const x = touch.clientX - rect.left - rect.width / 2;
-                  const y = touch.clientY - rect.top - rect.height / 2;
-                  setEmblemRotation({
-                    x: -(y / rect.height) * 40,
-                    y: (x / rect.width) * 40
-                  });
-                }
-              }}
-              onTouchEnd={handleEmblemMouseLeave}
-            >
-              <div 
-                className="w-56 h-56 md:w-72 md:h-72 rounded-full bg-gradient-to-br from-[#EADEC9] via-white to-[#B89742] p-4 shadow-2xl transition-transform duration-300 ease-out flex items-center justify-center relative"
-                style={{
-                  transform: `rotateX(${emblemRotation.x}deg) rotateY(${emblemRotation.y}deg)`,
-                  boxShadow: `${-emblemRotation.y * 0.5}px ${emblemRotation.x * 0.5}px 30px rgba(0,0,0,0.15)`
-                }}
-              >
-                {/* 3D Reflection Gloss highlight */}
-                <div className="absolute inset-0 rounded-full bg-gradient-to-tr from-transparent via-white/40 to-transparent pointer-events-none"></div>
-
-                {/* Inner Shield */}
-                <div className="w-full h-full rounded-full bg-[#1E3A8A] border-4 border-[#D4AF37] flex flex-col items-center justify-between p-4 relative overflow-hidden">
-                  
-                  {/* Subtle golden background glow */}
-                  <div className="absolute inset-4 rounded-full border border-[#D4AF37]/30 pointer-events-none"></div>
-                  
-                  <div className="text-[10px] tracking-widest text-[#D4AF37] font-sans font-bold mt-2">ALISHER NAVOI</div>
-
-                  {/* Central emblem shapes */}
-                  <div className="my-auto relative">
-                    <svg className="w-24 h-24 text-amber-400 drop-shadow-md" viewBox="0 0 100 100" fill="currentColor">
-                      {/* Open book & torch rays */}
-                      <path d="M50 30 L 50 10" stroke="#FFE6A5" strokeWidth="4" strokeLinecap="round" />
-                      <circle cx="50" cy="30" r="6" fill="#D4AF37" />
-                      <path d="M25 65 C 40 55, 50 55, 50 65 C 50 55, 60 55, 75 65 L 75 40 C 60 30, 50 30, 50 40 C 50 30, 25 30, 25 40 Z" />
-                      <circle cx="50" cy="50" r="14" fill="#1E3A8A" stroke="#D4AF37" strokeWidth="2" />
-                      <text x="50" y="54" fontSize="12" fill="#D4AF37" fontWeight="bold" textAnchor="middle" fontFamily="sans-serif">13</text>
-                    </svg>
-                  </div>
-
-                  <div className="text-[9px] tracking-widest text-[#FAF6EE] font-sans uppercase font-bold mb-2">№13 МЕКТЕП-ГИМНАЗИЯ</div>
-
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-4 text-xs italic text-[#8C6239]">Бұл рәміз — тұрақтылық пен мәңгілік білімнің бейнесі.</div>
-          </div>
-        </section>
-
-        {/* 7. SUNSET FINAL SCENE & FOOTER */}
-        <footer className="relative bg-gradient-to-b from-[#FAF6EE] via-[#EEDEB2]/60 to-[#FAF6EE] py-24 px-4 overflow-hidden text-center">
-          
-          <div className="max-w-4xl mx-auto space-y-8 relative z-10">
-            {/* Soft decorative flower line */}
-            <div className="text-3xl text-[#D4AF37] tracking-widest">❖ ◆ ❖</div>
-
-            <p className="text-xs uppercase tracking-[0.3em] text-[#8C6239] font-sans font-bold">Сапар соңы және жаңа бастама</p>
-
-            <h2 className="text-4xl md:text-6xl font-serif text-[#1E3A8A] font-bold">
-              «Біз сіздерді асыға күтеміз!»
-            </h2>
-
-            <p className="text-lg md:text-2xl text-[#8C6239] italic font-serif">
-              95 жылдық мерейтойға ортақтасып, тарихымыздың жаңа парағын бірге жазайық!
-            </p>
-
-            <div className="inline-block px-8 py-3 bg-[#1E3A8A] text-[#FAF6EE] rounded-full text-md font-sans tracking-widest font-bold border border-[#D4AF37]/40 shadow-xl">
-              10 ҚАЗАН 2026, 18:00
-            </div>
-
-            <div className="pt-12 text-xs text-gray-500 font-sans space-y-2">
-              <p>© 1931 - 2026 Әлішер Науаи атындағы №13 мектеп-гимназиясы.</p>
-              <p>Барлық құқықтар қорғалған. Самарқанд, Түркістан, Бұхара мәдени мұрасының қолдауымен.</p>
-            </div>
-          </div>
-
-          {/* Majestic background sun glow illustration at bottom center */}
-          <div className="absolute -bottom-40 left-1/2 -translate-x-1/2 w-[700px] h-[400px] rounded-full bg-gradient-to-t from-amber-200/50 via-amber-100/10 to-transparent blur-3xl pointer-events-none"></div>
+            <!-- Баяу бататын күн сәулесі -->
+            <div class="absolute -bottom-40 left-1/2 -translate-x-1/2 w-[700px] h-[400px] rounded-full bg-gradient-to-t from-amber-200/50 via-amber-100/10 to-transparent blur-3xl pointer-events-none"></div>
         </footer>
 
-      </div>
     </div>
-  );
-}
+
+    <!-- ==================== СЦЕНАРИЙЛЕР МЕН ИНТЕРБЕЛСЕНДІ ЖҮЙЕ ==================== -->
+    <script>
+        // --- ТАРИХИ ЖЫЛНАМА МӘЛІМЕТТЕРІ ---
+        const historyData = {
+            '1931': {
+                title: "Алғашқы қадам",
+                desc: "Түркістан өлкесіндегі ең алғашқы білім ошақтарының бірі болып мектеп іргетасы қаланды. Жүздеген бала алғаш рет сауат ашуға мүмкіндік алды.",
+                achievement: "Алғашқы ұстаздар мен сыныптар жинақталды.",
+                image: "https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&w=800&q=80"
+            },
+            '1950': {
+                title: "Соғыстан кейінгі серпіліс",
+                desc: "Мектеп ғимараты кеңейтіліп, материалдық-техникалық базасы нығайды. Білім сапасы жаңа деңгейге көтеріліп, алғашқы алтын белгі иегерлері шыға бастады.",
+                achievement: "Түлектердің жоғары оқу орындарына түсу көрсеткіші 40%-ға жетті.",
+                image: "https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?auto=format&fit=crop&w=800&q=80"
+            },
+            '1975': {
+                title: "Ұлы ақын есімі",
+                desc: "Мектепке әлемге әйгілі ойшыл, заңғар ақын Әлішер Науаи есімі берілді. Шығыс мәдениеті мен әдебиетін тереңдетіп оқыту басталды.",
+                achievement: "Әлішер Науаи музейі мен арнайы әдебиет үйірмелері ашылды.",
+                image: "https://images.unsplash.com/photo-1546410531-bb4caa6b424d?auto=format&fit=crop&w=800&q=80"
+            },
+            '1991': {
+                title: "Тәуелсіздік жаңа дәуірі",
+                desc: "Қазақстан Тәуелсіздігі жағдайында мектеп ұлттық білім беру стандарттарына көшіп, жаңа бағдарламалар мен тәрбие негіздерін қалыптастырды.",
+                achievement: "Мемлекеттік тілде білім беру және ұлттық бағыттағы реформалар басталды.",
+                image: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=800&q=80"
+            },
+            '2000': {
+                title: "Гимназия мәртебесі",
+                desc: "Білім берудегі ерекше жетістіктері үшін мектепке «Гимназия» мәртебесі берілді. Жаратылыстану және гуманитарлық бағыттар тереңдетіп оқытыла бастады.",
+                achievement: "Қалалық және облыстық олимпиадаларда командалық 1-орын иеленді.",
+                image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=800&q=80"
+            },
+            '2026': {
+                title: "95 жылдық салтанат",
+                desc: "Бүгінде №13 Әлішер Науаи атындағы мектеп-гимназиясы — озық технологиялармен жабдықталған, заманауи білім мен ұлттық тәрбиені ұштастырған алтын ұя.",
+                achievement: "Түркістан облысындағы ТОП-10 инновациялық білім ордасының бірі.",
+                image: "https://images.unsplash.com/photo-1577896851231-70ef18881754?auto=format&fit=crop&w=800&q=80"
+            }
+        };
+
+        // --- ГАЛЕРЕЯ МӘЛІМЕТТЕРІ ---
+        const galleryPhotos = [
+            {
+                title: "Ардақты ұстаздар ұжымы",
+                desc: "Білім нәрімен сусындатқан, жүрегі жылы ұстаздарымыздың бүгінгі жарқын бейнесі.",
+                url: "https://images.unsplash.com/photo-1524178232363-1fb2b075b655?auto=format&fit=crop&w=1200&q=80"
+            },
+            {
+                title: "Тарихи сәттер мен жәдігерлер",
+                desc: "Мектеп мұражайында сақталған алғашқы қоңырау, құжаттар мен тарихи суреттер жинағы.",
+                url: "https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?auto=format&fit=crop&w=1200&q=80"
+            },
+            {
+                title: "Инновациялық IT сыныптары",
+                desc: "Заманауи IT, STEM зертханалары мен шығармашылық шеберханалары.",
+                url: "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=1200&q=80"
+            },
+            {
+                title: "Мектептің алтын түлектері",
+                desc: "Әр жылдары алтын ұядан түлеп ұшып, ел дамуына үлес қосып жүрген саңлақтар.",
+                url: "https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&w=1200&q=80"
+            }
+        ];
+
+        let currentGalleryIndex = 0;
+
+        // --- ДӘСТҮРЛІ ӘУЕН СИНТЕЗАТОРЫ (Web Audio API) ---
+        let audioCtx = null;
+        let audioInterval = null;
+        let isAudioPlaying = false;
+
+        function startAmbientSynth() {
+            if (audioCtx) return;
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+
+                // Шығыс ұлттық әуенінің пернелері (Дутар сазы)
+                const melodyFreqs = [220, 261.63, 293.66, 311.13, 329.63, 392.00, 440, 523.25, 587.33, 659.25];
+                const noteSequence = [
+                    0, 2, 4, 3, 4, 7, 6, 4, 
+                    2, 4, 3, 2, 0, 1, 0, -1,
+                    4, 6, 7, 9, 7, 6, 4, 3,
+                    2, 0, 2, 3, 4, -1, 4, -1
+                ];
+                let noteIdx = 0;
+
+                const playTone = (freq, startTime, type = 'sine', duration = 2.0, volume = 0.1) => {
+                    if (freq <= 0) return;
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, startTime);
+                    
+                    gain.gain.setValueAtTime(0, startTime);
+                    gain.gain.linearRampToValueAtTime(volume, startTime + 0.08);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+                    
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(startTime);
+                    osc.stop(startTime + duration);
+                };
+
+                const scheduleNextNote = () => {
+                    const now = audioCtx.currentTime;
+                    const step = noteSequence[noteIdx % noteSequence.length];
+                    if (step !== -1) {
+                        const freq = melodyFreqs[step];
+                        // Ұлттық шертпе аспап үні
+                        playTone(freq, now, 'triangle', 2.2, 0.13);
+                        
+                        // Нәзік фортепиано сүйемелдеуі
+                        if (noteIdx % 4 === 0) {
+                            playTone(freq * 1.5, now, 'sine', 3.5, 0.05);
+                            playTone(freq * 0.5, now, 'sine', 4.0, 0.07);
+                        }
+                    }
+                    noteIdx++;
+                };
+
+                scheduleNextNote();
+                audioInterval = setInterval(scheduleNextNote, 1200);
+                isAudioPlaying = true;
+                updateAudioUI(true);
+            } catch (e) {
+                console.warn("Бұл шолғыш Web Audio API қолдамайды.", e);
+            }
+        }
+
+        function toggleAudio() {
+            if (!audioCtx) {
+                startAmbientSynth();
+                return;
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+                isAudioPlaying = true;
+                updateAudioUI(true);
+            } else if (audioCtx.state === 'running') {
+                audioCtx.suspend();
+                isAudioPlaying = false;
+                updateAudioUI(false);
+            }
+        }
+
+        function updateAudioUI(playing) {
+            const onIcon = document.getElementById('sound-on-icon');
+            const offIcon = document.getElementById('sound-off-icon');
+            if (playing) {
+                onIcon.classList.remove('hidden');
+                offIcon.classList.add('hidden');
+            } else {
+                onIcon.classList.add('hidden');
+                offIcon.classList.remove('hidden');
+            }
+        }
+
+        document.getElementById('audio-toggle-btn').addEventListener('click', toggleAudio);
+
+
+        // --- АЛТЫН ПЫЛЫҚТАР (CANVAS) ---
+        function initGoldParticles() {
+            const canvas = document.getElementById('particles-canvas');
+            const ctx = canvas.getContext('2d');
+            let animationFrameId;
+
+            const resize = () => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            };
+            resize();
+            window.addEventListener('resize', resize);
+
+            const particles = Array.from({ length: 70 }, () => ({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                radius: Math.random() * 2.2 + 0.6,
+                speedX: (Math.random() - 0.5) * 0.4,
+                speedY: -Math.random() * 0.7 - 0.2,
+                opacity: Math.random() * 0.6 + 0.2,
+                pulseSpeed: Math.random() * 0.015 + 0.005
+            }));
+
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                particles.forEach(p => {
+                    p.y += p.speedY;
+                    p.x += p.speedX;
+                    p.opacity += p.pulseSpeed;
+
+                    if (p.opacity > 0.8 || p.opacity < 0.1) {
+                        p.pulseSpeed = -p.pulseSpeed;
+                    }
+
+                    if (p.y < -10) {
+                        p.y = canvas.height + 10;
+                        p.x = Math.random() * canvas.width;
+                    }
+
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fillStyle = `rgba(212, 175, 55, ${Math.max(0, p.opacity)})`;
+                    ctx.shadowBlur = p.radius * 3.5;
+                    ctx.shadowColor = '#D4AF37';
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                });
+                animationFrameId = requestAnimationFrame(draw);
+            }
+            draw();
+        }
+
+
+        // --- БАСҚЫ КІТАП ЗАСТАВКАСЫНЫҢ СЕНАРИЙІ ---
+        const introSteps = [
+            // Бет 1: Кітап мұқабасы
+            () => {
+                document.getElementById('intro-loader').classList.add('hidden');
+                const book = document.getElementById('antique-book');
+                book.classList.remove('hidden');
+                document.getElementById('intro-hint').classList.remove('hidden');
+                document.getElementById('intro-hint').innerText = "Мерейтойлық кітап ашылуда...";
+
+                renderPageContent(`
+                    <div class="text-center mt-4">
+                        <span class="text-gold text-xs font-sans tracking-[0.2em] block mb-1">МЕРЕЙТОЙЛЫҚ КІТАП</span>
+                        <div class="w-12 h-[1px] bg-gold mx-auto"></div>
+                    </div>
+
+                    <div class="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-gold p-2 bg-white/85 shadow-lg flex items-center justify-center my-4 mx-auto relative floating-element">
+                        <div class="absolute inset-1 border border-gold/30 rounded-full"></div>
+                        <svg class="w-24 h-24 text-orient-blue" viewBox="0 0 100 100" fill="none">
+                          <circle cx="50" cy="50" r="45" stroke="#D4AF37" stroke-width="1.5" />
+                          <path d="M30 65 C 40 55, 50 55, 50 65 C 50 55, 60 55, 70 65 L 70 40 C 60 30, 50 30, 50 40 C 50 30, 40 30, 30 40 Z" fill="#1E3A8A" opacity="0.8" />
+                          <path d="M50 35 L 50 15 M 40 37 L 30 20 M 60 37 L 70 20 M 50 65 L 50 85" stroke="#D4AF37" stroke-width="2.5" stroke-linecap="round" />
+                          <circle cx="50" cy="50" r="4" fill="#D4AF37" />
+                        </svg>
+                    </div>
+
+                    <div class="mb-4">
+                        <h2 class="text-orient-blue text-lg md:text-2xl font-bold tracking-wider leading-relaxed">Ә. НАУАИ АТЫНДАҒЫ</h2>
+                        <h3 class="text-[#8C6239] text-xs md:text-sm font-sans tracking-widest uppercase mt-1">№13 МЕКТЕП-ГИМНАЗИЯСЫ</h3>
+                        <p class="text-gold text-xs font-serif mt-3 italic">«Қазақстанның асыл білім шаңырағы»</p>
+                    </div>
+
+                    <div class="text-[10px] text-[#8C6239]/70 font-sans tracking-widest pb-1 font-bold">
+                        1931 - 2026
+                    </div>
+                `);
+            },
+            // Бет 2: Әлішер Науаи нақылы
+            () => {
+                document.getElementById('intro-hint').innerText = "Ғасырлар даналығы...";
+                const page = document.getElementById('book-page');
+                page.classList.add('page-turn');
+
+                setTimeout(() => {
+                    page.classList.remove('page-turn');
+                    renderPageContent(`
+                        <div class="max-w-md mx-auto my-auto space-y-6">
+                            <div class="text-gold text-4xl">❖</div>
+                            <p class="text-md md:text-xl text-[#2C2115] italic font-serif leading-relaxed">
+                                «Тілге көңіл бөлген — елге көңіл бөлген, ал ғылымға ұмтылған — болашаққа жол ашқан.»
+                            </p>
+                            <div class="w-16 h-[1.5px] bg-gold mx-auto"></div>
+                            <p class="text-xs md:text-sm text-[#8C6239] font-sans uppercase tracking-widest font-bold">
+                                — Әлішер Науаи
+                            </p>
+                            <p class="text-[10px] text-[#8C6239]/60">Ұлы ойшыл, заңғар ақын</p>
+                        </div>
+                    `);
+                }, 900);
+            },
+            // Бет 3: "95 жыл" мерейтойы
+            () => {
+                document.getElementById('intro-hint').innerText = "Шежірелі білім бесігі...";
+                const page = document.getElementById('book-page');
+                page.classList.add('page-turn');
+
+                setTimeout(() => {
+                    page.classList.remove('page-turn');
+                    renderPageContent(`
+                        <div class="my-auto space-y-6">
+                            <div>
+                                <span class="text-[#8C6239] text-xs font-sans tracking-widest uppercase block font-semibold">Ұлы Мерейтой</span>
+                                <div class="w-14 h-[1px] bg-gold mx-auto mt-2"></div>
+                            </div>
+
+                            <div class="relative inline-block">
+                                <h1 class="text-7xl md:text-9xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-gold via-gold-light to-gold-dark tracking-wider drop-shadow-md animate-pulse">
+                                    95 ЖЫЛ
+                                </h1>
+                                <div class="absolute -top-4 -right-4 text-amber-400 text-xl">✦</div>
+                                <div class="absolute -bottom-2 -left-4 text-amber-500 text-lg">✦</div>
+                            </div>
+
+                            <h2 class="text-xl md:text-3xl font-serif text-orient-blue font-bold tracking-widest">
+                                МЕРЕЙТОЙЛЫҚ КЕЗЕҢ
+                            </h2>
+                            <p class="text-[10px] md:text-xs text-[#8C6239] font-sans tracking-widest uppercase font-semibold">
+                                Даңқты тарих пен жарқын болашақ
+                            </p>
+                        </div>
+                    `);
+                }, 900);
+            },
+            // Заставканы аяқтау
+            () => {
+                exitIntro();
+            }
+        ];
+
+        let currentIntroStep = 0;
+
+        function runIntroSequence() {
+            if (currentIntroStep < introSteps.length) {
+                introSteps[currentIntroStep]();
+                currentIntroStep++;
+                setTimeout(runIntroSequence, 3800);
+            }
+        }
+
+        function renderPageContent(html) {
+            document.getElementById('page-inner-content').innerHTML = html;
+        }
+
+        function exitIntro() {
+            const overlay = document.getElementById('intro-overlay');
+            overlay.classList.add('opacity-0');
+            setTimeout(() => {
+                overlay.classList.add('hidden');
+                
+                // Негізгі сайтты ашу
+                const mainSite = document.getElementById('main-site-content');
+                mainSite.classList.remove('opacity-0', 'pointer-events-none');
+                
+                // Анимацияларды іске қосу
+                initScrollAnimations();
+                // Жетістіктер санауыштарын іске қосу
+                triggerCounters();
+            }, 1000);
+        }
+
+        document.getElementById('skip-intro-btn').addEventListener('click', exitIntro);
+
+        window.addEventListener('load', () => {
+            initGoldParticles();
+            setTimeout(runIntroSequence, 1000);
+        });
+
+
+        // --- КЕРІ ЕСЕПТЕУ ТАЙМЕРІ ---
+        function runCountdown() {
+            // Мақсатты уақыт: 10 Қазан 2026, 18:00
+            const target = new Date('2026-10-10T18:00:00').getTime();
+
+            setInterval(() => {
+                const now = new Date().getTime();
+                const diff = target - now;
+
+                if (diff <= 0) {
+                    document.getElementById('countdown-days').innerText = "0";
+                    document.getElementById('countdown-hours').innerText = "0";
+                    document.getElementById('countdown-minutes').innerText = "0";
+                    document.getElementById('countdown-seconds').innerText = "0";
+                    return;
+                }
+
+                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+                document.getElementById('countdown-days').innerText = days;
+                document.getElementById('countdown-hours').innerText = hours;
+                document.getElementById('countdown-minutes').innerText = minutes;
+                document.getElementById('countdown-seconds').innerText = seconds;
+            }, 1000);
+        }
+        runCountdown();
+
+
+        // --- ИНТЕРБЕЛСЕНДІ ТАЙМЛАЙН ---
+        function switchTimeline(year) {
+            document.querySelectorAll('.timeline-tab').forEach(tab => {
+                tab.className = "timeline-tab px-6 py-3 rounded-full text-sm font-sans font-bold tracking-wider transition-all duration-300 min-w-[90px] bg-white/60 text-[#8C6239] hover:bg-gold/20 border border-gold/20";
+            });
+
+            const activeTab = document.getElementById(`tab-${year}`);
+            activeTab.className = "timeline-tab px-6 py-3 rounded-full text-sm font-sans font-bold tracking-wider transition-all duration-300 min-w-[90px] bg-orient-blue text-white shadow-md scale-110";
+
+            const data = historyData[year];
+            
+            document.getElementById('timeline-badge').innerText = `ТАРИХИ КЕЗЕҢ • ${year}`;
+            document.getElementById('timeline-title').innerText = data.title;
+            document.getElementById('timeline-desc').innerText = data.desc;
+            document.getElementById('timeline-achievement').innerText = data.achievement;
+            document.getElementById('timeline-img').src = data.image;
+        }
+
+
+        // --- ИНТЕРБЕЛСЕНДІ ГАЛЕРЕЯ КАРУСЕЛІ ---
+        function renderGalleryDots() {
+            const container = document.getElementById('gallery-dots-container');
+            container.innerHTML = "";
+            galleryPhotos.forEach((_, idx) => {
+                const btn = document.createElement('button');
+                btn.className = `h-2.5 rounded-full transition-all duration-300 ${currentGalleryIndex === idx ? 'w-8 bg-orient-blue' : 'w-2.5 bg-gray-300'}`;
+                btn.onclick = () => showGallerySlide(idx);
+                container.appendChild(btn);
+            });
+        }
+
+        function showGallerySlide(idx) {
+            currentGalleryIndex = idx;
+            const slide = galleryPhotos[idx];
+
+            const img = document.getElementById('gallery-image');
+            img.style.opacity = 0;
+            setTimeout(() => {
+                img.src = slide.url;
+                img.style.opacity = 1;
+            }, 250);
+
+            document.getElementById('gallery-title').innerText = slide.title;
+            document.getElementById('gallery-desc').innerText = slide.desc;
+            renderGalleryDots();
+        }
+
+        function nextGallerySlide() {
+            currentGalleryIndex = (currentGalleryIndex + 1) % galleryPhotos.length;
+            showGallerySlide(currentGalleryIndex);
+        }
+
+        function prevGallerySlide() {
+            currentGalleryIndex = (currentGalleryIndex - 1 + galleryPhotos.length) % galleryPhotos.length;
+            showGallerySlide(currentGalleryIndex);
+        }
+
+        renderGalleryDots();
+
+
+        // --- СКРОЛЛ АНИМАЦИЯЛАРЫ ---
+        function initScrollAnimations() {
+            const elements = document.querySelectorAll('.fade-in-up');
+            const checkScroll = () => {
+                elements.forEach(el => {
+                    const rect = el.getBoundingClientRect();
+                    if (rect.top < window.innerHeight - 50) {
+                        el.classList.add('visible');
+                    }
+                });
+
+                const header = document.getElementById('site-header');
+                if (window.scrollY > 80) {
+                    header.classList.add('bg-orient-cream/95', 'backdrop-blur-md', 'shadow-md');
+                    header.classList.remove('py-5');
+                    header.classList.add('py-3');
+                } else {
+                    header.classList.remove('bg-orient-cream/95', 'backdrop-blur-md', 'shadow-md');
+                    header.classList.add('py-5');
+                    header.classList.remove('py-3');
+                }
+            };
+            window.addEventListener('scroll', checkScroll);
+            checkScroll();
+        }
+
+
+        // --- ЖЕТІСТІК САНАУЫШТАРЫНЫҢ АНИМАЦИЯСЫ ---
+        let countersAnimated = false;
+        function triggerCounters() {
+            const targets = {
+                years: 95,
+                graduates: 10000,
+                teachers: 120,
+                medals: 150
+            };
+
+            const animateValue = (id, start, end, duration) => {
+                let startTimestamp = null;
+                const step = (timestamp) => {
+                    if (!startTimestamp) startTimestamp = timestamp;
+                    const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                    const value = Math.floor(progress * (end - start) + start);
+                    document.getElementById(`stat-${id}`).innerText = value + (id === 'graduates' || id === 'teachers' || id === 'medals' ? '+' : '');
+                    if (progress < 1) {
+                        window.requestAnimationFrame(step);
+                    }
+                };
+                window.requestAnimationFrame(step);
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting && !countersAnimated) {
+                        countersAnimated = true;
+                        animateValue('years', 0, targets.years, 2000);
+                        animateValue('graduates', 0, targets.graduates, 2500);
+                        animateValue('teachers', 0, targets.teachers, 2000);
+                        animateValue('medals', 0, targets.medals, 2200);
+                    }
+                });
+            }, { threshold: 0.2 });
+
+            observer.observe(document.getElementById('achievements'));
+        }
+
+
+        // --- ИНТЕРБЕЛСЕНДІ 3D ГЕРБ ЛОГИКАСЫ ---
+        const container = document.getElementById('emblem-container');
+        const badge = document.getElementById('emblem-badge');
+
+        container.addEventListener('mousemove', (e) => {
+            const rect = container.getBoundingClientRect();
+            const x = e.clientX - rect.left - rect.width / 2;
+            const y = e.clientY - rect.top - rect.height / 2;
+
+            const rotX = -(y / rect.height) * 35;
+            const rotY = (x / rect.width) * 35;
+
+            badge.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+            badge.style.boxShadow = `${-rotY * 0.7}px ${rotX * 0.7}px 35px rgba(0,0,0,0.2)`;
+        });
+
+        container.addEventListener('mouseleave', () => {
+            badge.style.transform = `rotateX(0deg) rotateY(0deg)`;
+            badge.style.boxShadow = `0px 10px 30px rgba(0,0,0,0.15)`;
+        });
+
+        // Сенсорлық басқару (Ұялы телефондар үшін)
+        container.addEventListener('touchmove', (e) => {
+            if (e.touches[0]) {
+                const touch = e.touches[0];
+                const rect = container.getBoundingClientRect();
+                const x = touch.clientX - rect.left - rect.width / 2;
+                const y = touch.clientY - rect.top - rect.height / 2;
+
+                const rotX = -(y / rect.height) * 40;
+                const rotY = (x / rect.width) * 40;
+
+                badge.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg)`;
+                badge.style.boxShadow = `${-rotY * 0.7}px ${rotX * 0.7}px 35px rgba(0,0,0,0.2)`;
+            }
+        });
+
+        container.addEventListener('touchend', () => {
+            badge.style.transform = `rotateX(0deg) rotateY(0deg)`;
+        });
+
+    </script>
+</body>
+</html>
 
