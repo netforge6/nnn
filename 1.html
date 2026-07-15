@@ -1,173 +1,1062 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="kk">
 <head>
     <meta charset="UTF-8">
-    <title>Склад товаров</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ә. Науаи атындағы №13 мектеп-гимназиясының 95 жылдық мерейтойы</title>
+    
+    <!-- Google Fonts: Cinzel, Cormorant Garamond, Manrope, Pinyon Script for luxurious handwriting -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;900&family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Manrope:wght@300;400;500;600;700&family=Pinyon+Script&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Three.js for Premium Particles and 3D effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        darknavy: '#050814',
+                        goldPrimary: '#D4AF37',
+                        goldSecondary: '#F6D365',
+                        whitePremium: '#F8F8F8',
+                        emeraldPremium: '#0E8F6A',
+                        royalBlue: '#0F2C59'
+                    },
+                    fontFamily: {
+                        cinzel: ['Cinzel', 'serif'],
+                        cormorant: ['Cormorant Garamond', 'serif'],
+                        manrope: ['Manrope', 'sans-serif'],
+                        handwriting: ['Pinyon Script', 'cursive']
+                    }
+                }
+            }
+        }
+    </script>
+
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 40px auto;
-            max-width: 800px;
-            background: #f6f6f6;
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
         }
-        h1 {
-            text-align: center;
-            margin-bottom: 20px;
+        ::-webkit-scrollbar-track {
+            background: #050814;
         }
-        form {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        input {
-            padding: 8px;
-            font-size: 14px;
-        }
-        button {
-            padding: 8px 14px;
-            background: #007bff;
-            color: white;
-            border: none;
-            cursor: pointer;
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #D4AF37, #0F2C59);
             border-radius: 4px;
         }
-        button:hover {
-            background: #0056b3;
+
+        /* Glassmorphism Classes */
+        .glass-card {
+            background: rgba(15, 44, 89, 0.15);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(212, 175, 55, 0.25);
+            box-shadow: 0 15px 35px 0 rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255, 255, 255, 0.1);
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
+
+        .glass-card-hover:hover {
+            border-color: rgba(246, 211, 101, 0.6);
+            box-shadow: 0 20px 40px 0 rgba(212, 175, 55, 0.15), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+            transform: translateY(-5px);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 8px;
-            text-align: center;
+
+        /* Ambient Glow & Gold Lighting effects */
+        .gold-glow {
+            filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.5));
         }
-        th {
-            background: #007bff;
-            color: white;
+
+        .gold-gradient-text {
+            background: linear-gradient(135deg, #FFF 0%, #F6D365 50%, #D4AF37 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
-        td[contenteditable="true"] {
-            background: #f0f8ff;
+
+        .gold-border-draw {
+            position: relative;
         }
-        .delete-btn {
-            background: #dc3545;
+
+        /* Custom Scroll Animation Utility */
+        .fade-in-section {
+            opacity: 0;
+            transform: translateY(40px) scale(0.98);
+            filter: blur(5px);
+            transition: opacity 1.2s cubic-bezier(0.16, 1, 0.3, 1), transform 1.2s cubic-bezier(0.16, 1, 0.3, 1), filter 1.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .delete-btn:hover {
-            background: #b52a37;
+
+        .fade-in-section.is-visible {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            filter: blur(0);
+        }
+
+        /* Shimmer / Molten Gold Reflections */
+        @keyframes shine {
+            100% { left: 125%; }
+        }
+
+        .shimmer-effect {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .shimmer-effect::after {
+            content: '';
+            position: absolute;
+            top: 0; left: -75%;
+            width: 50%; height: 100%;
+            background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.3) 100%);
+            transform: skewX(-25deg);
+            transition: 0.75s;
+        }
+
+        .shimmer-effect:hover::after {
+            animation: shine 1.2s ease-in-out;
+        }
+
+        /* Interactive Custom Cursor Spark */
+        .sparkle-cursor {
+            pointer-events: none;
+            position: fixed;
+            width: 8px; height: 8px;
+            background: #F6D365;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #D4AF37, 0 0 20px #D4AF37;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+            transition: width 0.2s, height 0.2s;
+        }
+
+        /* Floating Audio Control Styling */
+        .audio-pill {
+            background: rgba(5, 8, 20, 0.8);
+            border: 1px solid rgba(212, 175, 55, 0.4);
+            backdrop-filter: blur(8px);
+        }
+
+        /* Spinner for loaders */
+        @keyframes spin-slow {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .spin-slow-anim {
+            animation: spin-slow 25s linear infinite;
+        }
+
+        /* Image Zoom on hover for premium gallery */
+        .gallery-img {
+            transition: transform 1.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .gallery-card:hover .gallery-img {
+            transform: scale(1.1);
         }
     </style>
 </head>
-<body>
-    <h1>📦 База данных товаров</h1>
+<body class="bg-darknavy text-whitePremium font-manrope overflow-x-hidden relative">
 
-    <form id="productForm">
-        <input type="text" id="name" placeholder="Название товара" required>
-        <input type="number" id="quantity" placeholder="Количество" required>
-        <input type="number" id="price" placeholder="Цена" required step="0.01">
-        <button type="submit">Добавить</button>
-    </form>
+    <!-- Interactive Cursor Sparkle Field -->
+    <div id="cursorSparkle" class="sparkle-cursor hidden md:block"></div>
 
-    <table id="productTable">
-        <thead>
-            <tr>
-                <th>Название</th>
-                <th>Количество</th>
-                <th>Цена</th>
-                <th>Сумма</th>
-                <th>Действия</th>
-            </tr>
-        </thead>
-        <tbody></tbody>
-    </table>
+    <!-- Background Three.js Particle Container -->
+    <div id="three-container" class="fixed inset-0 w-full h-full pointer-events-none z-0 opacity-70"></div>
+
+    <!-- Ambient Slow-floating Light Orbs -->
+    <div class="fixed top-[20%] left-[-10%] w-[500px] h-[500px] bg-royalBlue opacity-20 rounded-full blur-[120px] pointer-events-none z-0"></div>
+    <div class="fixed bottom-[10%] right-[-10%] w-[600px] h-[600px] bg-royalBlue opacity-15 rounded-full blur-[140px] pointer-events-none z-0"></div>
+    <div class="fixed top-[50%] left-[40%] w-[300px] h-[300px] bg-[#0E8F6A] opacity-10 rounded-full blur-[100px] pointer-events-none z-0"></div>
+
+    <!-- AUDIO CONTROLLER (Floating pill) -->
+    <div class="fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-2 rounded-full audio-pill shadow-2xl transition-all duration-300 transform hover:scale-105">
+        <div class="flex flex-col text-[10px] tracking-widest text-goldPrimary uppercase">
+            <span class="font-bold">КҮЙ / КҮҮ</span>
+            <span id="audioStatus" class="opacity-70 text-[9px]">Өшірулі</span>
+        </div>
+        <button id="audioToggleBtn" class="w-10 h-10 rounded-full bg-gradient-to-r from-goldPrimary to-goldSecondary flex items-center justify-center text-darknavy focus:outline-none shadow-lg transition-transform hover:scale-110">
+            <i id="audioIcon" class="fa-solid fa-play"></i>
+        </button>
+    </div>
+
+    <!-- AUDIO ASSETS -->
+    <!-- Ambient rich combination of traditional sound of strings & luxury orchestra background -->
+    <audio id="ambientTrack" loop preload="auto">
+        <source src="https://assets.mixkit.co/active_storage/sfx/2568/2568-84.wav" type="audio/wav">
+        <source src="https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" type="audio/mp3">
+    </audio>
+
+    <!-- LOADING / FORMING OF THE MOLTEN GOLD EMBLEM SCREEN -->
+    <div id="loader-screen" class="fixed inset-0 bg-darknavy z-[9999] flex flex-col items-center justify-center transition-all duration-1000">
+        <div class="text-center relative max-w-lg px-6">
+            <!-- Luxury spinning ornament background -->
+            <div class="absolute inset-0 flex items-center justify-center -z-10">
+                <svg class="w-80 h-80 opacity-10 spin-slow-anim text-goldPrimary" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" stroke-width="0.5" stroke-dasharray="2 2" />
+                    <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" stroke-width="1" />
+                </svg>
+            </div>
+
+            <!-- Golden Emblem Outline forming dynamically -->
+            <div class="mb-6 relative flex justify-center">
+                <div class="w-32 h-32 rounded-full border-2 border-goldPrimary border-t-transparent animate-spin flex items-center justify-center">
+                    <svg class="w-20 h-20 text-goldPrimary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M12 2L2 22h20L12 2zM12 6l7 14H5l7-14z" />
+                        <circle cx="12" cy="14" r="3" />
+                    </svg>
+                </div>
+            </div>
+
+            <h2 class="font-cinzel text-xl md:text-2xl tracking-[0.25em] text-goldPrimary mb-2 animate-pulse uppercase">ӘЛ-ФАРАБИ МЕН НАУАИ МҰРАСЫ</h2>
+            <div class="w-48 h-[1px] bg-gradient-to-r from-transparent via-goldPrimary to-transparent mx-auto mb-4"></div>
+            <p id="loader-percent" class="text-goldSecondary font-mono text-sm tracking-widest mb-6">0% жүктелуде</p>
+            
+            <button id="startExperienceBtn" class="hidden px-8 py-3 bg-gradient-to-r from-goldPrimary to-goldSecondary text-darknavy font-bold font-cinzel tracking-wider rounded shadow-xl hover:scale-105 transition duration-300 text-sm uppercase">
+                Кіру (Music ON)
+            </button>
+        </div>
+    </div>
+
+
+    <!-- 1. OPENING CINEMATIC SCENE / HERO SECTION -->
+    <header class="relative min-h-screen flex flex-col justify-between items-center px-4 py-8 z-10 overflow-hidden">
+        
+        <!-- Elegant Top Border & Frame Ornamentation -->
+        <div class="absolute top-0 inset-x-0 h-16 flex justify-between items-center px-6 md:px-12 pointer-events-none opacity-80">
+            <svg class="w-12 h-12 text-goldPrimary" viewBox="0 0 100 100">
+                <path d="M0,0 L40,0 C40,20 20,40 0,40 L0,0 Z" fill="none" stroke="currentColor" stroke-width="2"/>
+                <circle cx="20" cy="20" r="5" fill="currentColor"/>
+            </svg>
+            <div class="font-cinzel text-[10px] md:text-xs tracking-[0.4em] text-goldPrimary text-center">
+                МЕРЕЙТОЙЛЫҚ ШАҚЫРУ • 95 ЖЫЛ
+            </div>
+            <svg class="w-12 h-12 text-goldPrimary transform rotate-90" viewBox="0 0 100 100">
+                <path d="M0,0 L40,0 C40,20 20,40 0,40 L0,0 Z" fill="none" stroke="currentColor" stroke-width="2"/>
+                <circle cx="20" cy="20" r="5" fill="currentColor"/>
+            </svg>
+        </div>
+
+        <div class="my-auto text-center flex flex-col items-center">
+            
+            <!-- Hero Floating 3D Golden Number 95 Emblem with glowing particles -->
+            <div class="relative mb-6 group cursor-pointer" id="interactiveEmblem">
+                <!-- Outer Golden Circles of Emblem from Inspiration Image -->
+                <div class="absolute inset-0 bg-gradient-to-tr from-goldPrimary to-royalBlue rounded-full opacity-20 blur-xl group-hover:scale-110 transition duration-1000"></div>
+                
+                <div class="relative w-72 h-72 md:w-80 md:h-80 rounded-full flex items-center justify-center bg-[#050814]/80 border-4 border-double border-goldPrimary/60 p-4 shadow-[0_0_50px_rgba(212,175,55,0.3)]">
+                    
+                    <!-- Uzbek Ornamental Patterns rotated infinitely in background -->
+                    <div class="absolute inset-4 rounded-full border border-dashed border-goldSecondary/30 animate-[spin_100s_linear_infinite]"></div>
+                    
+                    <!-- Center 95 & Portrait Emblem Frame -->
+                    <div class="text-center flex flex-col items-center justify-center">
+                        <span class="block font-cinzel text-8xl md:text-9xl font-black text-transparent bg-clip-text bg-gradient-to-b from-[#FFF] via-goldSecondary to-goldPrimary drop-shadow-[0_4px_10px_rgba(0,0,0,0.9)] tracking-tighter">95</span>
+                        <div class="text-xs md:text-sm font-cinzel tracking-[0.35em] text-goldSecondary font-bold mt-[-10px]">ЖЫЛ</div>
+                        
+                        <!-- Mini Divider -->
+                        <div class="w-16 h-[1px] bg-gradient-to-r from-transparent via-goldPrimary to-transparent my-2"></div>
+                        
+                        <!-- Portrait or emblem micro-graphic from our uploaded file -->
+                        <div class="flex items-center gap-1 bg-royalBlue/50 px-3 py-1 rounded-full border border-goldPrimary/20">
+                            <span class="text-[9px] text-whitePremium tracking-widest font-mono uppercase">ТҮРКІСТАН</span>
+                        </div>
+                    </div>
+
+                    <!-- Leaves crown graphic decoration around the lower part -->
+                    <div class="absolute bottom-[-15px] inset-x-0 flex justify-center">
+                        <div class="bg-darknavy px-4 py-1 rounded-full border border-goldPrimary text-[10px] tracking-[0.2em] text-goldPrimary uppercase">
+                            Ә. НАУАИ МЕКТЕБІ
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- School Title with Premium Font -->
+            <h1 class="font-cinzel text-xl md:text-3xl font-bold tracking-[0.25em] text-whitePremium max-w-3xl leading-relaxed px-4 text-center mt-6">
+                ӘЛИШЕР НАУАИ АТЫНДАҒЫ<br>
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-goldPrimary via-[#FFF] to-goldSecondary font-black text-2xl md:text-4xl">№13 МЕКТЕП-ГИМНАЗИЯСЫ</span>
+            </h1>
+
+            <div class="w-32 h-[2px] bg-gradient-to-r from-transparent via-goldPrimary to-transparent my-6"></div>
+
+            <!-- Subtitle from requirements -->
+            <p class="font-cormorant text-lg md:text-2xl text-goldSecondary italic tracking-wide max-w-2xl px-6">
+                «Ұрпақтар сабақтастығы – білім мен тәрбиенің алтын бесігі»
+            </p>
+
+            <div class="mt-8">
+                <a href="#invitation-text" class="shimmer-effect relative inline-flex items-center gap-3 px-8 py-3.5 bg-gradient-to-r from-goldPrimary to-goldSecondary text-darknavy font-cinzel font-bold text-xs tracking-[0.2em] uppercase rounded shadow-[0_0_25px_rgba(212,175,55,0.4)] hover:shadow-[0_0_40px_rgba(212,175,55,0.7)] transform hover:scale-105 transition-all duration-300">
+                    Шақыруды көру <i class="fa-solid fa-chevron-down animate-bounce text-[10px]"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- Scroll Indicator -->
+        <div class="flex flex-col items-center pointer-events-none opacity-60">
+            <span class="text-[9px] tracking-[0.3em] uppercase text-goldPrimary mb-2">Төмен қарай сырғытыңыз</span>
+            <div class="w-[1px] h-12 bg-gradient-to-b from-goldPrimary to-transparent"></div>
+        </div>
+
+        <!-- Frame Bottom Ornamentation -->
+        <div class="absolute bottom-0 inset-x-0 h-16 flex justify-between items-center px-6 md:px-12 pointer-events-none opacity-80">
+            <svg class="w-12 h-12 text-goldPrimary transform rotate-270" viewBox="0 0 100 100">
+                <path d="M0,0 L40,0 C40,20 20,40 0,40 L0,0 Z" fill="none" stroke="currentColor" stroke-width="2"/>
+                <circle cx="20" cy="20" r="5" fill="currentColor"/>
+            </svg>
+            <div class="w-24 h-[1px] bg-goldPrimary/20"></div>
+            <svg class="w-12 h-12 text-goldPrimary transform rotate-180" viewBox="0 0 100 100">
+                <path d="M0,0 L40,0 C40,20 20,40 0,40 L0,0 Z" fill="none" stroke="currentColor" stroke-width="2"/>
+                <circle cx="20" cy="20" r="5" fill="currentColor"/>
+            </svg>
+        </div>
+    </header>
+
+
+    <!-- 2. HISTORICAL TIMELINE SECTION -->
+    <section class="relative py-24 px-4 overflow-hidden z-10 border-t border-goldPrimary/10">
+        
+        <!-- Large Background Traditional Watermark Pattern -->
+        <div class="absolute right-0 top-1/2 -translate-y-1/2 w-96 h-96 opacity-5 pointer-events-none select-none">
+            <svg class="w-full h-full text-goldSecondary" viewBox="0 0 100 100" fill="currentColor">
+                <circle cx="50" cy="50" r="45" stroke="currentColor" stroke-width="0.5" fill="none" />
+                <path d="M50 5 L50 95 M5 50 L95 50" />
+            </svg>
+        </div>
+
+        <div class="max-w-5xl mx-auto">
+            <div class="text-center mb-16 fade-in-section">
+                <span class="text-goldPrimary font-cinzel text-xs tracking-[0.4em] uppercase block mb-2">Мерейлі Тарих</span>
+                <h2 class="font-cinzel text-3xl md:text-5xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-whitePremium via-goldSecondary to-goldPrimary">
+                    ҒАСЫРЛАРҒА ЖАЛҒАСҚАН БІЛІМ ОРДАСЫ
+                </h2>
+                <div class="w-24 h-[1px] bg-goldPrimary mx-auto mt-4"></div>
+            </div>
+
+            <!-- Historical Frame & Timeline Design -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                
+                <!-- Navoi & Historical Parchment Framing -->
+                <div class="relative order-2 md:order-1 fade-in-section">
+                    <div class="glass-card rounded-2xl p-6 relative border-2 border-goldPrimary/30 overflow-hidden group">
+                        
+                        <!-- Corner Golden Ornaments -->
+                        <div class="absolute top-2 left-2 w-6 h-6 border-t-2 border-l-2 border-goldSecondary"></div>
+                        <div class="absolute top-2 right-2 w-6 h-6 border-t-2 border-r-2 border-goldSecondary"></div>
+                        <div class="absolute bottom-2 left-2 w-6 h-6 border-b-2 border-l-2 border-goldSecondary"></div>
+                        <div class="absolute bottom-2 right-2 w-6 h-6 border-b-2 border-r-2 border-goldSecondary"></div>
+
+                        <!-- Inner portrait frame mimicking the second source image with Hazrat Navoi -->
+                        <div class="relative rounded-xl overflow-hidden bg-gradient-to-b from-[#0F2C59] to-[#050814] p-4 text-center">
+                            
+                            <!-- SVG Styled portrait vector / traditional container -->
+                            <div class="w-40 h-40 mx-auto rounded-full border-4 border-goldPrimary overflow-hidden mb-4 shadow-xl bg-emeraldPremium/10 flex items-center justify-center">
+                                <!-- Generative SVG-like representative portrait frame from our files -->
+                                <svg class="w-28 h-28 text-goldSecondary" viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="1.5">
+                                    <circle cx="50" cy="40" r="20" />
+                                    <path d="M20 85 C20 60 80 60 80 85" stroke-linecap="round"/>
+                                    <path d="M50 10 L50 20 M35 15 L45 25 M65 15 L55 25" />
+                                </svg>
+                            </div>
+
+                            <span class="text-xs text-goldSecondary tracking-widest font-bold uppercase block">Ұлы ойшыл</span>
+                            <h3 class="font-cinzel text-xl text-whitePremium tracking-wide mt-1">ӘЛИШЕР НАУАИ</h3>
+                            <p class="text-xs text-whitePremium/70 italic mt-1">«Ғылым – бұл таусылмайтын қазына»</p>
+                            
+                            <!-- 585 Year watermark representing Navoi birth celebration timeline -->
+                            <div class="mt-4 inline-block bg-darknavy border border-goldPrimary/40 px-4 py-1.5 rounded-full">
+                                <span class="text-xs font-cinzel text-goldPrimary tracking-[0.2em] font-bold">585 ЖЫЛ</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Descriptive copy and highlights -->
+                <div class="order-1 md:order-2 space-y-6 fade-in-section">
+                    <div class="flex items-start gap-4">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-goldPrimary to-goldSecondary flex-shrink-0 flex items-center justify-center text-darknavy font-cinzel font-bold text-lg">1</div>
+                        <div>
+                            <h4 class="font-cinzel text-lg tracking-wider text-goldPrimary">Құрылу Және Бастау</h4>
+                            <p class="text-sm text-whitePremium/80 mt-1 leading-relaxed">
+                                Мектеп негізі қаланған күннен бастап, ұрпақ тәрбиесі мен білім беру саласында өлшеусіз үлес қосып, ұлт мақтаныштары мен зиялыларды тәрбиелеп келеді.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-4">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-goldPrimary to-goldSecondary flex-shrink-0 flex items-center justify-center text-darknavy font-cinzel font-bold text-lg">2</div>
+                        <div>
+                            <h4 class="font-cinzel text-lg tracking-wider text-goldPrimary">Заманауи Дәуір</h4>
+                            <p class="text-sm text-whitePremium/80 mt-1 leading-relaxed">
+                                Бұл күнде мектеп-гимназия озық технологиялар мен инновациялық оқыту әдістемелерін үйлестіріп, халықаралық деңгейдегі жеңімпаздарды дайындауда.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-4">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-goldPrimary to-goldSecondary flex-shrink-0 flex items-center justify-center text-darknavy font-cinzel font-bold text-lg">3</div>
+                        <div>
+                            <h4 class="font-cinzel text-lg tracking-wider text-goldPrimary">95 Мерейлі Көктем</h4>
+                            <p class="text-sm text-whitePremium/80 mt-1 leading-relaxed">
+                                Ғасырға жуық уақыт бойы білім нұрын сепкен ұямыз, ата-баба аманаты мен Тәуелсіз еліміздің болашағын қалыптастыру жолында асқақ белестерді бағындырды.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- 3. MAIN LIVE COUNTDOWN SECTION -->
+    <section class="relative py-20 px-4 bg-gradient-to-b from-[#050814] via-[#0F2C59]/30 to-[#050814] z-10">
+        
+        <!-- Subtle dynamic ornament divider line -->
+        <div class="max-w-4xl mx-auto flex items-center justify-center gap-4 mb-12">
+            <div class="h-[1px] bg-gradient-to-r from-transparent to-goldPrimary flex-1"></div>
+            <span class="text-goldPrimary text-lg">✦</span>
+            <div class="h-[1px] bg-gradient-to-l from-transparent to-goldPrimary flex-1"></div>
+        </div>
+
+        <div class="max-w-4xl mx-auto text-center fade-in-section">
+            <span class="text-goldSecondary font-cinzel text-xs tracking-[0.3em] uppercase block mb-2">МЕРЕЙТОЙ БАСТАЛУЫНА ҚАЛДЫ:</span>
+            
+            <h3 class="font-cinzel text-2xl md:text-3xl text-whitePremium tracking-widest mb-10">
+                10 ҚАЗАН 2026 ЖЫЛ • СЕНБІ
+            </h3>
+
+            <!-- Countdown Timer Blocks -->
+            <div class="grid grid-cols-4 gap-3 md:gap-6 max-w-2xl mx-auto" id="countdown-timer">
+                
+                <!-- Days Card -->
+                <div class="glass-card rounded-2xl p-4 md:p-6 border border-goldPrimary/40 flex flex-col items-center justify-center shadow-[0_10px_25px_rgba(0,0,0,0.5)]">
+                    <span id="days" class="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-whitePremium to-goldSecondary tracking-tight">000</span>
+                    <span class="text-[9px] md:text-xs text-goldPrimary tracking-widest uppercase mt-2">КҮН</span>
+                </div>
+
+                <!-- Hours Card -->
+                <div class="glass-card rounded-2xl p-4 md:p-6 border border-goldPrimary/40 flex flex-col items-center justify-center shadow-[0_10px_25px_rgba(0,0,0,0.5)]">
+                    <span id="hours" class="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-whitePremium to-goldSecondary tracking-tight">00</span>
+                    <span class="text-[9px] md:text-xs text-goldPrimary tracking-widest uppercase mt-2">САҒАТ</span>
+                </div>
+
+                <!-- Minutes Card -->
+                <div class="glass-card rounded-2xl p-4 md:p-6 border border-goldPrimary/40 flex flex-col items-center justify-center shadow-[0_10px_25px_rgba(0,0,0,0.5)]">
+                    <span id="minutes" class="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-whitePremium to-goldSecondary tracking-tight">00</span>
+                    <span class="text-[9px] md:text-xs text-goldPrimary tracking-widest uppercase mt-2">МИНУТ</span>
+                </div>
+
+                <!-- Seconds Card -->
+                <div class="glass-card rounded-2xl p-4 md:p-6 border border-goldPrimary/40 flex flex-col items-center justify-center shadow-[0_10px_25px_rgba(0,0,0,0.5)]">
+                    <span id="seconds" class="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-b from-whitePremium to-goldSecondary tracking-tight text-goldSecondary">00</span>
+                    <span class="text-[9px] md:text-xs text-goldSecondary tracking-widest uppercase mt-2">СЕКУНД</span>
+                </div>
+
+            </div>
+
+            <!-- Dynamic motivational indicator -->
+            <p class="text-xs text-whitePremium/60 italic tracking-wider mt-8">
+                «Мәртебелі білім ошағының үлкен жиынында жүздескенше!»
+            </p>
+        </div>
+    </section>
+
+
+    <!-- 4. OFFICIAL INVITATION LETTER SECTION -->
+    <section id="invitation-text" class="relative py-24 px-4 z-10 overflow-hidden">
+        
+        <!-- Double Border & Framing for Letter feel -->
+        <div class="max-w-3xl mx-auto glass-card rounded-3xl p-8 md:p-16 border-2 border-goldPrimary/50 relative shadow-[0_20px_50px_rgba(0,0,0,0.8)] fade-in-section">
+            
+            <!-- Traditional Corner Accents -->
+            <div class="absolute top-4 left-4 w-12 h-12 border-t-2 border-l-2 border-goldPrimary"></div>
+            <div class="absolute top-4 right-4 w-12 h-12 border-t-2 border-r-2 border-goldPrimary"></div>
+            <div class="absolute bottom-4 left-4 w-12 h-12 border-b-2 border-l-2 border-goldPrimary"></div>
+            <div class="absolute bottom-4 right-4 w-12 h-12 border-b-2 border-r-2 border-goldPrimary"></div>
+
+            <div class="text-center relative">
+                
+                <!-- Golden Feather Quill representing Alisher Navoi's legacy -->
+                <div class="mb-6">
+                    <svg class="w-16 h-16 text-goldPrimary mx-auto animate-pulse" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+                        <path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z" />
+                        <line x1="16" y1="8" x2="2" y2="22" />
+                        <line x1="17.5" y1="15" x2="9" y2="15" />
+                    </svg>
+                </div>
+
+                <h2 class="font-cinzel text-3xl md:text-5xl font-bold tracking-[0.2em] text-transparent bg-clip-text bg-gradient-to-r from-goldPrimary via-[#FFF] to-goldSecondary mb-8 uppercase">
+                    ШАҚЫРУ ҚАҒАЗЫ
+                </h2>
+
+                <!-- Greeting Card Body -->
+                <div class="space-y-6 text-whitePremium/95 font-cormorant text-xl md:text-2xl leading-relaxed">
+                    
+                    <p class="font-cinzel font-bold text-lg md:text-xl text-goldSecondary tracking-wider">
+                        Құрметті ұстаздар, ардақты түлектер және қадірлі қонақтар!
+                    </p>
+
+                    <p class="font-light">
+                        Сіздерді ғасырға жуық уақыт бойы білім мен ғылымның, тәрбие мен өнегенің алтын ордасы болып келе жатқан, ұлы ойшыл бабамыздың есімін иеленген
+                    </p>
+
+                    <p class="font-cinzel font-bold text-goldPrimary tracking-widest text-lg md:text-2xl">
+                        ӘЛИШЕР НАУАИ АТЫНДАҒЫ<br>
+                        №13 МЕКТЕП-ГИМНАЗИЯСЫНЫҢ
+                    </p>
+
+                    <p class="text-2xl md:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-[#FFF] to-goldSecondary">
+                        95 ЖЫЛДЫҚ МЕРЕЙТОЙЫНА
+                    </p>
+
+                    <p class="font-light">
+                        арналған салтанатты мерейлі кешіміздің қадірлі қонағы болуға шын жүректен шақырамыз!
+                    </p>
+
+                    <!-- Beautiful cursive/handwriting text mimicking real calligraphy from our image template -->
+                    <p class="font-handwriting text-5xl md:text-6xl text-goldSecondary my-6 tracking-normal">
+                        Біз сіздерді күтеміз!
+                    </p>
+
+                    <!-- Divider -->
+                    <div class="w-24 h-[1px] bg-gradient-to-r from-transparent via-goldPrimary to-transparent mx-auto"></div>
+
+                    <div class="pt-4 text-sm md:text-base font-cinzel tracking-widest text-goldPrimary/80">
+                        БІРГЕ ЕСТЕ АЛАЙЫҚ, БІРГЕ ЖАСАЙЫҚ!
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- 5. EVENT INFORMATION CARDS (DATE, TIME, VENUE, ATTENDEES) -->
+    <section class="relative py-16 px-4 z-10">
+        <div class="max-w-6xl mx-auto">
+            
+            <div class="text-center mb-16 fade-in-section">
+                <span class="text-goldPrimary font-cinzel text-xs tracking-[0.4em] uppercase block mb-2">Ақпарат Көзі</span>
+                <h2 class="font-cinzel text-2xl md:text-4xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-[#FFF] to-goldPrimary">
+                    ТОЛЫҚ МӘЛІМЕТТЕР
+                </h2>
+                <div class="w-16 h-[1px] bg-goldPrimary mx-auto mt-4"></div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                
+                <!-- CARD 1: DATE -->
+                <div class="glass-card glass-card-hover rounded-2xl p-8 text-center flex flex-col justify-between h-72 fade-in-section">
+                    <div class="text-4xl text-goldPrimary mb-4">
+                        <i class="fa-regular fa-calendar-days"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-cinzel text-xs tracking-[0.2em] text-goldSecondary uppercase mb-1">КҮНІ</h3>
+                        <div class="h-[1px] bg-goldPrimary/20 w-12 mx-auto mb-3"></div>
+                        <p class="font-cinzel text-xl font-bold text-whitePremium">10.10.2026</p>
+                        <p class="text-xs text-whitePremium/60 mt-1">Жұма / Сенбі</p>
+                    </div>
+                    <div class="text-[9px] text-goldPrimary/60 tracking-widest uppercase">Қазан айы</div>
+                </div>
+
+                <!-- CARD 2: TIME -->
+                <div class="glass-card glass-card-hover rounded-2xl p-8 text-center flex flex-col justify-between h-72 fade-in-section">
+                    <div class="text-4xl text-goldPrimary mb-4">
+                        <i class="fa-regular fa-clock"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-cinzel text-xs tracking-[0.2em] text-goldSecondary uppercase mb-1">УАҚЫТЫ</h3>
+                        <div class="h-[1px] bg-goldPrimary/20 w-12 mx-auto mb-3"></div>
+                        <p class="font-cinzel text-xl font-bold text-whitePremium">18:00</p>
+                        <p class="text-xs text-whitePremium/60 mt-1">Басталу уақыты</p>
+                    </div>
+                    <div class="text-[9px] text-goldPrimary/60 tracking-widest uppercase">Қонақтарды қарсы алу</div>
+                </div>
+
+                <!-- CARD 3: LOCATION -->
+                <div class="glass-card glass-card-hover rounded-2xl p-8 text-center flex flex-col justify-between h-72 fade-in-section">
+                    <div class="text-4xl text-goldPrimary mb-4">
+                        <i class="fa-solid fa-map-location-dot"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-cinzel text-xs tracking-[0.2em] text-goldSecondary uppercase mb-1">МЕКЕН-ЖАЙЫ</h3>
+                        <div class="h-[1px] bg-goldPrimary/20 w-12 mx-auto mb-3"></div>
+                        <p class="font-cinzel text-base font-bold text-whitePremium">Түркістан қаласы</p>
+                        <p class="text-xs text-whitePremium/80 mt-1">Төле би көшесі, 46</p>
+                    </div>
+                    <div class="text-[9px] text-goldPrimary/60 tracking-widest uppercase">Мектеп Салтанат залы</div>
+                </div>
+
+                <!-- CARD 4: GUESTS -->
+                <div class="glass-card glass-card-hover rounded-2xl p-8 text-center flex flex-col justify-between h-72 fade-in-section">
+                    <div class="text-4xl text-goldPrimary mb-4">
+                        <i class="fa-solid fa-users"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-cinzel text-xs tracking-[0.2em] text-goldSecondary uppercase mb-1">ҚОНАҚТАР</h3>
+                        <div class="h-[1px] bg-goldPrimary/20 w-12 mx-auto mb-3"></div>
+                        <p class="font-cinzel text-sm font-bold text-whitePremium">Ардагер ұстаздар, Түлектер мен Сыйлы қонақтар</p>
+                    </div>
+                    <div class="text-[9px] text-emeraldPremium tracking-widest uppercase font-bold">Баршаңызға есігіміз ашық!</div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+
+    <!-- 6. INTERACTIVE MAP SECTION WITH REAL ROUTING & DIRECTIONS -->
+    <section class="relative py-16 px-4 z-10">
+        <div class="max-w-4xl mx-auto text-center fade-in-section">
+            
+            <div class="glass-card rounded-3xl p-6 md:p-10 border border-goldPrimary/40 relative overflow-hidden">
+                <div class="absolute -right-16 -top-16 w-32 h-32 rounded-full bg-royalBlue/30 blur-2xl pointer-events-none"></div>
+                
+                <h3 class="font-cinzel text-xl md:text-2xl text-goldSecondary tracking-widest mb-6">БІЗДІҢ МЕКЕН-ЖАЙЫМЫЗ КАРТАДА</h3>
+                
+                <!-- Map visual design placeholder with interactive capabilities and buttons -->
+                <div class="w-full h-80 rounded-2xl bg-[#050814] border border-goldPrimary/30 relative flex items-center justify-center overflow-hidden mb-6 group">
+                    
+                    <!-- Stylized Vector Map representation to look beautiful & prestigious -->
+                    <div class="absolute inset-0 opacity-40 mix-blend-color-dodge bg-cover bg-center pointer-events-none" style="background-image: url('https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&q=80&w=1000');"></div>
+                    
+                    <!-- Golden radar waves on Turkistan pin -->
+                    <div class="absolute w-24 h-24 rounded-full border border-goldPrimary/40 animate-[ping_4s_linear_infinite]"></div>
+                    <div class="absolute w-12 h-12 rounded-full border-2 border-goldSecondary/60 animate-[ping_2s_linear_infinite]"></div>
+                    
+                    <!-- Custom Golden PIN representation -->
+                    <div class="relative flex flex-col items-center">
+                        <div class="w-14 h-14 rounded-full bg-royalBlue border-2 border-goldPrimary flex items-center justify-center text-goldSecondary text-xl shadow-[0_0_25px_rgba(212,175,55,0.8)] transition duration-500 transform group-hover:scale-110">
+                            <i class="fa-solid fa-school"></i>
+                        </div>
+                        <span class="mt-3 bg-darknavy/90 text-goldPrimary border border-goldPrimary/30 px-3 py-1 rounded-full text-xs font-cinzel tracking-widest font-bold">№13 МЕКТЕП-ГИМНАЗИЯ</span>
+                    </div>
+
+                    <!-- Inner Top / Bottom Gradient Overlays -->
+                    <div class="absolute inset-x-0 top-0 h-10 bg-gradient-to-b from-darknavy to-transparent"></div>
+                    <div class="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-darknavy to-transparent"></div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <!-- Google Maps Real Route Anchor Link -->
+                    <a href="https://maps.google.com/?q=School+13+Turkistan" target="_blank" class="shimmer-effect inline-flex items-center justify-center gap-2 px-8 py-3 bg-gradient-to-r from-goldPrimary to-goldSecondary text-darknavy font-cinzel font-bold text-xs tracking-[0.15em] uppercase rounded shadow-lg transform hover:scale-105 transition duration-300">
+                        <i class="fa-solid fa-map-location-dot"></i> Google Maps арқылы ашу
+                    </a>
+                    
+                    <!-- Yandex Maps Route Link -->
+                    <a href="https://yandex.com/maps/?text=Turkistan+School+13" target="_blank" class="inline-flex items-center justify-center gap-2 px-8 py-3 bg-royalBlue/80 hover:bg-royalBlue text-whitePremium font-cinzel font-bold text-xs tracking-[0.15em] uppercase rounded border border-goldPrimary/40 transition duration-300">
+                        <i class="fa-solid fa-location-arrow"></i> Яндекс Картамен ашу
+                    </a>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+
+    <!-- 7. PORTRAIT AND SCHOOL PHOTO PREVIEW GALLERY -->
+    <section class="relative py-20 px-4 z-10 overflow-hidden">
+        <div class="max-w-6xl mx-auto">
+            
+            <div class="text-center mb-16 fade-in-section">
+                <span class="text-goldPrimary font-cinzel text-xs tracking-[0.4em] uppercase block mb-2">Мектеп өмірі</span>
+                <h2 class="font-cinzel text-3xl md:text-5xl font-bold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-[#FFF] to-goldPrimary">
+                    ЕСТЕЛІКТЕР СЫР ШЕРТЕДІ
+                </h2>
+                <div class="w-16 h-[1px] bg-goldPrimary mx-auto mt-4"></div>
+            </div>
+
+            <!-- Beautiful Cinematic Carousel/Grid with premium fallback structures -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                
+                <!-- Gallery Item 1 -->
+                <div class="glass-card gallery-card rounded-2xl overflow-hidden border border-goldPrimary/20 group cursor-pointer fade-in-section">
+                    <div class="h-64 overflow-hidden relative">
+                        <div class="absolute inset-0 bg-gradient-to-t from-darknavy via-transparent to-transparent z-10"></div>
+                        <img src="https://images.unsplash.com/photo-1541339907198-e08756dedf3f?auto=format&fit=crop&q=80&w=600" alt="School building and heritage" class="w-full h-full object-cover gallery-img" onerror="this.src='https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&q=80&w=600'">
+                    </div>
+                    <div class="p-6 relative">
+                        <div class="absolute -top-10 right-6 w-12 h-12 rounded-full bg-gradient-to-tr from-goldPrimary to-goldSecondary flex items-center justify-center text-darknavy text-sm font-bold z-20 shadow-lg">
+                            95
+                        </div>
+                        <h3 class="font-cinzel text-base text-goldPrimary tracking-wider mb-2">Мектеп Тарихы</h3>
+                        <p class="text-xs text-whitePremium/75 leading-relaxed">Білім ордамыздың алғашқы іргетасы мен қалыптасу кезеңінен бастап сыр шертетін тарихи белестер.</p>
+                    </div>
+                </div>
+
+                <!-- Gallery Item 2 -->
+                <div class="glass-card gallery-card rounded-2xl overflow-hidden border border-goldPrimary/20 group cursor-pointer fade-in-section">
+                    <div class="h-64 overflow-hidden relative">
+                        <div class="absolute inset-0 bg-gradient-to-t from-darknavy via-transparent to-transparent z-10"></div>
+                        <img src="https://images.unsplash.com/photo-1427504494785-3a9ca7044f45?auto=format&fit=crop&q=80&w=600" alt="Graduates and teachers" class="w-full h-full object-cover gallery-img" onerror="this.src='https://images.unsplash.com/photo-1509062522246-3755977927d7?auto=format&fit=crop&q=80&w=600'">
+                    </div>
+                    <div class="p-6 relative">
+                        <div class="absolute -top-10 right-6 w-12 h-12 rounded-full bg-gradient-to-tr from-goldPrimary to-goldSecondary flex items-center justify-center text-darknavy text-sm font-bold z-20 shadow-lg">
+                            ✦
+                        </div>
+                        <h3 class="font-cinzel text-base text-goldPrimary tracking-wider mb-2">Ұлағатты Ұстаздар</h3>
+                        <p class="text-xs text-whitePremium/75 leading-relaxed">Талай түлекті ұядан ұшырып, қияға қондырған, мектеп абыройын аспандатқан ұлы тұлғалар мен ардагерлер.</p>
+                    </div>
+                </div>
+
+                <!-- Gallery Item 3 -->
+                <div class="glass-card gallery-card rounded-2xl overflow-hidden border border-goldPrimary/20 group cursor-pointer fade-in-section">
+                    <div class="h-64 overflow-hidden relative">
+                        <div class="absolute inset-0 bg-gradient-to-t from-darknavy via-transparent to-transparent z-10"></div>
+                        <img src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?auto=format&fit=crop&q=80&w=600" alt="Achievements and awards" class="w-full h-full object-cover gallery-img" onerror="this.src='https://images.unsplash.com/photo-1546410531-bb4caa6b424d?auto=format&fit=crop&q=80&w=600'">
+                    </div>
+                    <div class="p-6 relative">
+                        <div class="absolute -top-10 right-6 w-12 h-12 rounded-full bg-gradient-to-tr from-goldPrimary to-goldSecondary flex items-center justify-center text-darknavy text-sm font-bold z-20 shadow-lg">
+                            🏆
+                        </div>
+                        <h3 class="font-cinzel text-base text-goldPrimary tracking-wider mb-2">Мәртебелі Жетістіктер</h3>
+                        <p class="text-xs text-whitePremium/75 leading-relaxed">Халықаралық олимпиадалар, алтын белгілер мен мектебіміздің жарқын даңқты жетістіктері.</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+
+    <!-- 8. HIGH-PRESTIGE ANIMATED STATISTICS COUNTERS -->
+    <section class="relative py-24 px-4 bg-gradient-to-b from-[#050814] via-[#0F2C59]/25 to-[#050814] z-10">
+        <div class="max-w-5xl mx-auto">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8">
+                
+                <!-- Stat Block 1 -->
+                <div class="text-center fade-in-section">
+                    <span class="block font-cinzel text-5xl md:text-6xl font-black text-goldPrimary mb-2" id="counter-years">95</span>
+                    <div class="w-12 h-[1px] bg-goldSecondary mx-auto mb-3"></div>
+                    <span class="text-xs md:text-sm text-whitePremium/85 tracking-[0.2em] uppercase">Жылдық мол тарих</span>
+                </div>
+
+                <!-- Stat Block 2 -->
+                <div class="text-center fade-in-section">
+                    <span class="block font-cinzel text-5xl md:text-6xl font-black text-goldPrimary mb-2" id="counter-graduates">10000+</span>
+                    <div class="w-12 h-[1px] bg-goldSecondary mx-auto mb-3"></div>
+                    <span class="text-xs md:text-sm text-whitePremium/85 tracking-[0.2em] uppercase">Мектеп бітіруші түлектер</span>
+                </div>
+
+                <!-- Stat Block 3 -->
+                <div class="text-center fade-in-section">
+                    <span class="block font-cinzel text-5xl md:text-6xl font-black text-goldPrimary mb-2" id="counter-teachers">100+</span>
+                    <div class="w-12 h-[1px] bg-goldSecondary mx-auto mb-3"></div>
+                    <span class="text-xs md:text-sm text-whitePremium/85 tracking-[0.2em] uppercase">Кәсіби білікті ұстаздар</span>
+                </div>
+
+                <!-- Stat Block 4 -->
+                <div class="text-center fade-in-section">
+                    <span class="block font-cinzel text-5xl md:text-6xl font-black text-goldPrimary mb-2" id="counter-awards">1000+</span>
+                    <div class="w-12 h-[1px] bg-goldSecondary mx-auto mb-3"></div>
+                    <span class="text-xs md:text-sm text-whitePremium/85 tracking-[0.2em] uppercase">Қалалық және Халықаралық жеңістер</span>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+
+    <!-- 9. FINAL PREMIUM ZOOM-OUT EPILOGUE AND LOGO ANIMATION -->
+    <section class="relative py-32 px-4 text-center overflow-hidden z-10 border-t border-goldPrimary/10">
+        
+        <!-- Golden Dust Particles Rising background graphic -->
+        <div class="absolute bottom-0 inset-x-0 h-48 bg-gradient-to-t from-darknavy via-transparent to-transparent pointer-events-none"></div>
+
+        <div class="max-w-3xl mx-auto flex flex-col items-center fade-in-section">
+            
+            <!-- Slow spinning elegant emblem frame -->
+            <div class="relative w-36 h-36 mb-8 group cursor-pointer">
+                <div class="absolute inset-0 bg-goldPrimary/20 rounded-full blur-xl group-hover:bg-goldPrimary/40 transition duration-700"></div>
+                <div class="relative w-full h-full rounded-full border-2 border-double border-goldPrimary flex items-center justify-center p-3 bg-darknavy spin-slow-anim">
+                    <svg class="w-20 h-20 text-goldPrimary" viewBox="0 0 100 100">
+                        <!-- Intricate Uzbek ornament elements -->
+                        <path d="M50 10 C55 30 70 45 90 50 C70 55 55 70 50 90 C45 70 30 55 10 50 C30 45 45 30 50 10 Z" fill="none" stroke="currentColor" stroke-width="1.5" />
+                        <circle cx="50" cy="50" r="8" fill="currentColor"/>
+                    </svg>
+                </div>
+            </div>
+
+            <h2 class="font-cinzel text-xl md:text-2xl text-goldSecondary tracking-[0.3em] uppercase mb-4">
+                САЛТАНАТТЫ КЕШ ТАҚЫРЫБЫ:
+            </h2>
+            
+            <p class="font-cormorant text-2xl md:text-4xl text-whitePremium tracking-wide italic mb-10 px-4 leading-relaxed">
+                «Мектеп – кешегі, бүгінгі және ертеңгі тұлғалар бесігі»
+            </p>
+
+            <div class="w-32 h-[1px] bg-gradient-to-r from-transparent via-goldPrimary to-transparent mb-8"></div>
+
+            <p class="font-cinzel text-xl tracking-[0.25em] text-whitePremium mb-2">10 ҚАЗАН 2026</p>
+            <p class="font-handwriting text-5xl text-goldSecondary tracking-wide mb-12">Біз сіздерді асыға күтеміз!</p>
+
+            <!-- Scroll back to top button -->
+            <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="shimmer-effect px-8 py-3 rounded-full border border-goldPrimary text-goldPrimary text-xs font-cinzel tracking-widest uppercase hover:bg-goldPrimary/10 transition duration-300">
+                Басына оралу <i class="fa-solid fa-arrow-up ml-2"></i>
+            </button>
+        </div>
+    </section>
+
+
+    <!-- FOOTER SECTION -->
+    <footer class="relative py-12 px-4 z-10 border-t border-goldPrimary/10 text-center">
+        <div class="max-w-4xl mx-auto flex flex-col items-center">
+            
+            <!-- Emblems of the event organizers -->
+            <div class="flex items-center gap-4 mb-6">
+                <span class="text-xs font-cinzel text-goldPrimary tracking-widest uppercase">Ә. НАУАИ АТЫНДАҒЫ №13 МЕКТЕП-ГИМНАЗИЯСЫ</span>
+            </div>
+
+            <p class="text-xs text-whitePremium/50 tracking-widest mb-4">
+                © 2026 Барлық құқықтар қорғалған. Түркістан қаласы.
+            </p>
+
+            <div class="flex items-center gap-2">
+                <span class="text-[9px] text-goldPrimary/40 tracking-widest">ІЗГІ ҚҰРМЕТПЕН: ҰЙЫМДАСТЫРУ АЛҚАСЫ</span>
+            </div>
+
+            <div class="mt-4 opacity-30 text-[8px] tracking-[0.3em] text-goldSecondary uppercase">
+                UNESCO Мектептер Қауымдастығының мүшесі
+            </div>
+        </div>
+    </footer>
+
 
     <script>
-        const form = document.getElementById('productForm');
-        const tableBody = document.querySelector('#productTable tbody');
-        let products = JSON.parse(localStorage.getItem('products')) || [];
+        // ----------------------------------------------------
+        // THREE.JS PREMIUM FLOATING PARTICLES & GOLDEN DUST BACKGROUND
+        // ----------------------------------------------------
+        let scene, camera, renderer, starGeo, stars, starCount = 600;
 
-        // Отрисовка таблицы
-        function renderTable() {
-            tableBody.innerHTML = '';
-            products.forEach((product, index) => {
-                const row = document.createElement('tr');
+        function initParticles() {
+            const container = document.getElementById('three-container');
+            if(!container) return;
 
-                // Название
-                const nameCell = document.createElement('td');
-                nameCell.textContent = product.name;
-                row.appendChild(nameCell);
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
+            camera.position.z = 1;
+            camera.rotation.x = Math.PI / 2;
 
-                // Количество
-                const qtyCell = document.createElement('td');
-                qtyCell.textContent = product.quantity;
-                qtyCell.contentEditable = "true";
-                qtyCell.addEventListener('input', () => updateField(index, 'quantity', qtyCell.textContent));
-                row.appendChild(qtyCell);
+            renderer = new THREE.WebGLRenderer({ alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(renderer.domElement);
 
-                // Цена
-                const priceCell = document.createElement('td');
-                priceCell.textContent = product.price;
-                priceCell.contentEditable = "true";
-                priceCell.addEventListener('input', () => updateField(index, 'price', priceCell.textContent));
-                row.appendChild(priceCell);
+            starGeo = new THREE.BufferGeometry();
+            const positions = new Float32Array(starCount * 3);
+            const velocities = [];
 
-                // Сумма
-                const totalCell = document.createElement('td');
-                totalCell.textContent = (product.quantity * product.price).toFixed(2);
-                row.appendChild(totalCell);
+            for(let i = 0; i < starCount; i++) {
+                positions[i*3] = Math.random() * 600 - 300;
+                positions[i*3+1] = Math.random() * 600 - 300;
+                positions[i*3+2] = Math.random() * 600 - 300;
+                velocities.push(0.1 + Math.random() * 0.3);
+            }
 
-                // Удаление
-                const actionCell = document.createElement('td');
-                const delBtn = document.createElement('button');
-                delBtn.textContent = 'Удалить';
-                delBtn.className = 'delete-btn';
-                delBtn.onclick = () => deleteProduct(index);
-                actionCell.appendChild(delBtn);
-                row.appendChild(actionCell);
+            starGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
 
-                tableBody.appendChild(row);
+            // Create circular glowing golden material representing beautiful floating dust
+            const pMaterial = new THREE.PointsMaterial({
+                color: 0xD4AF37,
+                size: window.innerWidth < 768 ? 1.5 : 2.2,
+                transparent: true,
+                opacity: 0.8
             });
-            saveToLocalStorage();
+
+            stars = new THREE.Points(starGeo, pMaterial);
+            scene.add(stars);
+
+            window.addEventListener('resize', onWindowResize);
+            animateParticles(velocities);
         }
 
-        // Добавление товара
-        form.addEventListener('submit', e => {
-            e.preventDefault();
-            const name = document.getElementById('name').value.trim();
-            const quantity = Number(document.getElementById('quantity').value);
-            const price = Number(document.getElementById('price').value);
-            products.push({ name, quantity, price });
-            form.reset();
-            renderTable();
+        function animateParticles(velocities) {
+            requestAnimationFrame(() => animateParticles(velocities));
+
+            const positions = starGeo.attributes.position.array;
+
+            for(let i = 0; i < starCount; i++) {
+                positions[i*3+1] -= velocities[i]; // Move particle down
+
+                // Reset position if it falls below screen depth bounds
+                if (positions[i*3+1] < -200) {
+                    positions[i*3+1] = 200;
+                    positions[i*3] = Math.random() * 600 - 300;
+                }
+            }
+
+            // Slowly rotate entire particle field for dynamic visual depth
+            stars.rotation.y += 0.0008;
+
+            starGeo.attributes.position.needsUpdate = true;
+            renderer.render(scene, camera);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+
+        // ----------------------------------------------------
+        // LIVE ACCURATE COUNTDOWN TO OCTOBER 10, 2026
+        // ----------------------------------------------------
+        const targetDate = new Date("October 10, 2026 18:00:00").getTime();
+
+        function updateCountdown() {
+            const now = new Date().getTime();
+            const difference = targetDate - now;
+
+            // If celebration has reached/passed
+            if (difference < 0) {
+                document.getElementById('days').innerText = "00";
+                document.getElementById('hours').innerText = "00";
+                document.getElementById('minutes').innerText = "00";
+                document.getElementById('seconds').innerText = "00";
+                return;
+            }
+
+            const d = Math.floor(difference / (1000 * 60 * 60 * 24));
+            const h = Math.floor((difference % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const m = Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60));
+            const s = Math.floor((difference % (1000 * 60)) / 1000);
+
+            document.getElementById('days').innerText = String(d).padStart(3, '0');
+            document.getElementById('hours').innerText = String(h).padStart(2, '0');
+            document.getElementById('minutes').innerText = String(m).padStart(2, '0');
+            document.getElementById('seconds').innerText = String(s).padStart(2, '0');
+        }
+
+        setInterval(updateCountdown, 1000);
+
+
+        // ----------------------------------------------------
+        // PRESTIGIOUS MOUSE INTERACTION & GLOWING EFFECT
+        // ----------------------------------------------------
+        const cursorSpark = document.getElementById('cursorSparkle');
+        document.addEventListener('mousemove', (e) => {
+            if(cursorSpark) {
+                cursorSpark.style.left = e.clientX + 'px';
+                cursorSpark.style.top = e.clientY + 'px';
+            }
         });
 
-        // Обновление поля
-        function updateField(index, field, value) {
-            let numValue = Number(value);
-            if (field === 'quantity' || field === 'price') {
-                products[index][field] = isNaN(numValue) ? 0 : numValue;
+        // Interactive 3D Rotation on Golden Emblem with mouse coordinate movement
+        const interactiveEmblem = document.getElementById('interactiveEmblem');
+        if (interactiveEmblem) {
+            document.addEventListener('mousemove', (e) => {
+                const xAxis = (window.innerWidth / 2 - e.clientX) / 25;
+                const yAxis = (window.innerHeight / 2 - e.clientY) / 25;
+                interactiveEmblem.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
+            });
+            document.addEventListener('mouseleave', () => {
+                interactiveEmblem.style.transform = `rotateY(0deg) rotateX(0deg)`;
+                interactiveEmblem.style.transition = 'all 0.5s ease';
+            });
+            document.addEventListener('mouseenter', () => {
+                interactiveEmblem.style.transition = 'none';
+            });
+        }
+
+
+        // ----------------------------------------------------
+        // AMBIENT PRESTIGIOUS MUSIC & EXPERIENTIAL LOAD CONTROLLER
+        // ----------------------------------------------------
+        const audio = document.getElementById('ambientTrack');
+        const audioToggleBtn = document.getElementById('audioToggleBtn');
+        const audioIcon = document.getElementById('audioIcon');
+        const audioStatus = document.getElementById('audioStatus');
+        let isPlaying = false;
+
+        function togglePlay() {
+            if (isPlaying) {
+                audio.pause();
+                audioIcon.className = "fa-solid fa-play";
+                audioStatus.innerText = "Өшірулі";
+                audioStatus.classList.remove("text-goldSecondary");
+                audioStatus.classList.add("opacity-70");
+                isPlaying = false;
             } else {
-                products[index][field] = value;
+                audio.play().then(() => {
+                    audioIcon.className = "fa-solid fa-pause";
+                    audioStatus.innerText = "Қосулы";
+                    audioStatus.classList.add("text-goldSecondary");
+                    audioStatus.classList.remove("opacity-70");
+                    isPlaying = true;
+                }).catch(err => {
+                    console.log("Audio play blocked by browser. Awaiting user interaction.", err);
+                });
             }
-            renderTable();
         }
 
-        // Удаление товара
-        function deleteProduct(index) {
-            products.splice(index, 1);
-            renderTable();
+        audioToggleBtn.addEventListener('click', togglePlay);
+
+
+        // ----------------------------------------------------
+        // LOADING INITIALIZATION FOR PROLOGUE SCENE
+        // ----------------------------------------------------
+        window.addEventListener('load', () => {
+            const loaderPercent = document.getElementById('loader-percent');
+            const startBtn = document.getElementById('startExperienceBtn');
+            let percentage = 0;
+
+            const interval = setInterval(() => {
+                percentage += Math.floor(Math.random() * 15) + 5;
+                if (percentage >= 100) {
+                    percentage = 100;
+                    clearInterval(interval);
+                    
+                    // Show start experience button
+                    loaderPercent.classList.add('hidden');
+                    startBtn.classList.remove('hidden');
+                }
+                loaderPercent.innerText = percentage + "% жүктелуде";
+            }, 100);
+
+            // Click button to start premium music and animations
+            startBtn.addEventListener('click', () => {
+                // Initialize background particles
+                initParticles();
+                
+                // Hide loader with premium scale-out fade animation
+                const loader = document.getElementById('loader-screen');
+                loader.style.opacity = '0';
+                loader.style.transform = 'scale(1.1)';
+                setTimeout(() => {
+                    loader.style.display = 'none';
+                }, 1000);
+
+                // Auto-trigger sound experience smoothly
+                togglePlay();
+
+                // Trigger scroll-revealed animations for loaded viewport elements
+                handleScrollReveal();
+            });
+        });
+
+
+        // ----------------------------------------------------
+        // SCROLL REVEAL TRIGGERS (SMOOTH SCROLL DELIGHTS)
+        // ----------------------------------------------------
+        const sections = document.querySelectorAll('.fade-in-section');
+
+        function handleScrollReveal() {
+            sections.forEach(section => {
+                const rect = section.getBoundingClientRect();
+                const viewHeight = Math.min(document.documentElement.clientHeight, window.innerHeight);
+                if (rect.top <= viewHeight * 0.85) {
+                    section.classList.add('is-visible');
+                }
+            });
         }
 
-        // Сохранение в LocalStorage
-        function saveToLocalStorage() {
-            localStorage.setItem('products', JSON.stringify(products));
-        }
-
-        // При загрузке страницы
-        renderTable();
+        window.addEventListener('scroll', handleScrollReveal);
     </script>
 </body>
 </html>
